@@ -1,0 +1,28 @@
+location / {
+    root        /srv/pacman-repo;
+    autoindex   on;
+
+    # Forward any updates to localhost:5000 (where our FastCGI Server is 
+    # expected to listen) and receive full file before
+    location ~ ^/(?<repo>[^/]+)/upload/?$ {
+
+    # Authentication disabled here. We expect a reverse proxy before this
+    # instance to do it.
+#        auth_basic                 "Pacman Repository Nafets-build Upload";
+#        auth_basic_user_file       conf.d/nafets-build.htpasswd;
+#        limit_except POST          { deny all; }
+
+        client_body_temp_path      /srv/pacman-repo/upload/;
+        client_body_in_file_only   on;
+        client_body_buffer_size    128K;
+        client_max_body_size       1000M;
+
+	include /etc/nginx/fastcgi.conf;
+
+	fastcgi_param NGINX_REQUEST_BODY_FILE $request_body_file;
+	fastcgi_param NAFETS227_PACMAN_REPO_NAME $repo;
+        fastcgi_pass unix:/run/upload.sock;
+    }
+
+}
+

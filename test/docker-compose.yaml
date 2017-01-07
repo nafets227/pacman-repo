@@ -1,0 +1,18 @@
+# Test compose for ArchLinux pacman Repository container
+#
+# (C) 2017 Stefan Schallenberg
+#
+version: '2'
+
+services:
+  pacman-repo:
+    build: ..
+    image: pacman-repo
+    volumes:
+        # Pacman Repositories (cache + nafets)
+        - ./repo:/srv/pacman-repo
+        - ./cache:/srv/pacman-cache
+    expose:
+        - "80"
+    ports:
+        - "8084:80"
