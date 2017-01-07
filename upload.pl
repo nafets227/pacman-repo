@@ -109,6 +109,9 @@ sub analysePkg {
 	
 	print "<h1>Package Meta-Data</h1>\n";
 
+	# @TODO Consider using Perl Module ALPM instead of command line
+	# interface and parsing
+	# see http://search.cpan.org/~apg/ALPM-3.06/lib/ALPM/Package.pod
 	my $output = qx(pacman -Qpi $pkgfile);
 	# Example Output:
 	# Name            : binutils-efi
@@ -346,6 +349,9 @@ BEGIN {
 END {
   print STDERR "update.pl ending- RC=$?.\n";
   }
+
+# @TODO Insert Signal handler or something similar ro catch unwanted 
+# aborts or exits.
 
 ##############################################################################
 ##### Main ###################################################################
