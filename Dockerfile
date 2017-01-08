@@ -37,6 +37,13 @@ RUN \
         perl \
         perl-fcgi
 
+# Remove temporary files to save space
+RUN \
+	paccache -r -k0 && \
+	rm -rf /usr/share/man/* && \
+	rm -rf /tmp/* && \
+	rm -rf /var/tmp/*
+
 EXPOSE 80 443
 CMD /usr/local/bin/start.sh
 VOLUME /srv/pacman-repo /srv/pacman-cache
