@@ -1,5 +1,0 @@
-##
-## Arch Linux repository mirrorlist
-## for Testing
-##
-Server = http://localhost:8084/$repo/os/$arch
