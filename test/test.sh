@@ -29,10 +29,11 @@ function testclient {
 	# Startup
 	pushd $THISDIR >/dev/null
 	rm -rf client cache repo >/dev/null
+	mkdir -p client client/etc/pacman.d client/var/lib/pacman client/var/cache/pacman/pkg
 	$DOCK_COMP up -d --force-recreate --build
 	sleep 2
 
-	##### Test 1: Uploading a package #####
+	##### Test: Uploading a package #####
 	STARTTIME=$(date +%s)
 	if [ -f repo/test/$TESTPKGNAM ]; then
 		printf "Error - Package File %s exists before RUN\n" "repo/test/$TESTPKGNAM"
@@ -45,11 +46,21 @@ function testclient {
 			"repo/test/os/x86_64/$TESTPKGNAM"
 		return 1
 	fi
+	if ! [ -f repo/test/os/x86_64/test.db.tar.gz ] ; then
+		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		printf  "Error - Repo Database %s missing after upload\n" \
+			"repo/test/test.db.tar.gz"
+		return 1
+	fi
+	if ! [ -L repo/test/os/x86_64/test.db ] ; then
+		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		printf  "Error - Repo Database %s missing after upload\n" \
+			"repo/test/test.db"
+		return 1
+	fi
 
-	##### Test 2: Loading Repository index #####
+	##### Test: Loading Repository index #####
 	STARTTIME=$(date +%s)
-	mkdir client
-	mkdir -p client/etc/pacman.d client/var/lib/pacman client/var/cache/pacman/pkg
 	pacman -Syy $PACMAN_OPT
 	if [ $? -ne 0 ]	; then
 		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
@@ -63,7 +74,24 @@ function testclient {
 		return 1
 	fi
 
-	##### Test 3: Loading a package from public #####
+	##### Test: Loading Package of custom repo #####
+	STARTTIME=$(date +%s)
+	pacman -Sw $PACMAN_OPT binutils-efi
+	# This package does not exist in official repos, it was just uploaded
+	if [ $? -ne 0 ]	; then
+		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		printf "Error - pacman could not load package pacman\n"
+		return 1
+	fi
+	if [ ! -f client/var/cache/pacman/pkg/$TESTPKGNAM ] ; then
+		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		printf  "Error - pacman did not write %s \n" \
+			"client/var/cache/pacman/pkg/$TESTPKGNAM"
+		return 1
+	fi
+
+
+	##### Test: Loading a package from public #####
 	STARTTIME=$(date +%s)
 	pacman -Sw $PACMAN_OPT pacman
 	if [ $? -ne 0 ]	; then

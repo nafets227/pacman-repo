@@ -15,3 +15,8 @@ Include = pacman.mirrorlist
 [community]
 Include = pacman.mirrorlist
 
+##### This is for testing our local repository
+[test]
+SigLevel = Optional # do not require signed packages or DB´s
+Include = pacman.mirrorlist
+

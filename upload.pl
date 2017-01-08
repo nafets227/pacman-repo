@@ -185,6 +185,7 @@ sub uploadPkg {
 
 	my %pkgMeta = analysePkg($pkgfile);
 
+	print "<h1>Uploading package</h1>\n";
 	##### identify target directory and filename #####
 	my $arch=$pkgMeta{'Architecture'};
 	my $template=$Config{'template'};
@@ -232,6 +233,19 @@ sub uploadPkg {
 	print "Success.\n";
 	print "Your package has been successfully uploaded to $destfile\n";
 	print STDERR "Uploaded to $destfile\n";
+	print "<hr>\n";
+
+	#### Last recreate the database files ####
+	print "<h1>Recreating database</h1>\n";
+
+	my $output = qx(repo-add $dest_dir/$repo.db.tar.gz $destfile);
+	foreach my $line (split /[\r\n]+/, $output) {
+		print "$line<br>\n";
+	}
+	print "<hr>\n";
+
+	# @TODO: Add package and database signing
+	#
 	return OK;
 }
 
