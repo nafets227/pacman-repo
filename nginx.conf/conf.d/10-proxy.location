@@ -1,11 +1,19 @@
-location ~ ^/(core|extra|community|multilib|testing|community-testing|multilib-testing|gnome-unsstable|kde-unstable)/.*$ {
+location ~ ^/(?<repo>core|extra|community|multilib|testing|community-testing|multilib-testing|gnome-unsstable|kde-unstable|alarm|aur)/os/(?<arch>[^/]+)/(?<pkg>[^/]+)$ {
     # Handle official Arch Linux repositories as caching only.
+    # path for request: /$repo/os/$arch/<package>
+
 
     # Requests for package db and signature files should redirect upstream 
     # without caching
     location ~ ^/.*\.(db|sig)$ {
         autoindex   on;
-        proxy_pass http://mirror.de.leaseweb.net/archlinux$request_uri;
+
+        set $pkgtype "repo";
+
+        # Trick: foward to @pkg_nocache
+        recursive_error_pages on;
+        error_page 404 = @pkg_nocache;
+        return 404;
     }
 
     # Requests for actual packages should be served directly from cache if 
@@ -14,6 +22,7 @@ location ~ ^/(core|extra|community|multilib|testing|community-testing|multilib-t
     location ~ ^/.*\.tar\.xz$ {
         root        /srv/pacman-cache;
         autoindex   on;
+        set $pkgtype "pkg";
         try_files $uri @pkg_mirror;
     }
 
@@ -22,14 +31,54 @@ location ~ ^/(core|extra|community|multilib|testing|community-testing|multilib-t
 
 resolver		127.0.0.11 ipv6=off;
 
+
+location @handle_redirect {
+    set $saved_redirect_location '$upstream_http_location';
+    proxy_pass $saved_redirect_location;
+}
+
 # Retrieve package from upstream mirrors and cache for future requests
 location @pkg_mirror {
     root                /srv/pacman-cache;
     proxy_store         on;
     proxy_redirect      off;
     proxy_store_access  user:rw group:rw all:r;
-    proxy_next_upstream error timeout http_404;
-    proxy_pass          http://mirror.de.leaseweb.net/archlinux$request_uri;
-    proxy_set_header    Host mirror.de.leaseweb.net;
+    proxy_pass          http://mirror.de.leaseweb.net/archlinux/$repo/os/$arch/$pkg;
+
+    proxy_intercept_errors on;
+    recursive_error_pages on;
+    error_page 301 302 307 = @handle_redirect;
+    error_page 404         = @arm_mirror;
 }
 
+location @pkg_nocache {
+    proxy_pass          http://mirror.de.leaseweb.net/archlinux/$repo/os/$arch/$pkg;
+
+    proxy_intercept_errors on;
+    recursive_error_pages on;
+    error_page 301 302 307 = @handle_redirect;
+    error_page 404         = @arm_nocache;
+}
+
+# Second chance: Arch Linux Arm mirror
+location @arm_mirror {
+    root                /srv/pacman-cache;
+    proxy_store         on;
+    proxy_redirect      off;
+    proxy_store_access  user:rw group:rw all:r;
+    proxy_pass          http://mirror.archlinuxarm.org/$arch/$repo/$pkg;
+    proxy_redirect      $uri /$arch/$repo/$pkg;
+
+    proxy_intercept_errors on;
+    recursive_error_pages on;
+    error_page 301 302 307 = @handle_redirect;
+}
+
+location @arm_nocache {
+    proxy_pass          http://mirror.archlinuxarm.org/$arch/$repo/$pkg;
+#    proxy_redirect      $uri /$arch/$repo/$pkg;
+
+    proxy_intercept_errors on;
+    recursive_error_pages on;
+    error_page 301 302 307 = @handle_redirect;
+}
