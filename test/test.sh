@@ -118,7 +118,13 @@ function testUpload {
 		printf "Error - Package File %s exists before RUN\n" "repo/test/$TESTPKGNAM"
 		return 1
 	fi
-	curl -i $CURL_USER --data-binary @$TESTPKGNAM $URL/test/upload/
+	curl -fi $CURL_USER --data-binary @$TESTPKGNAM $URL/test/upload/
+	rc=$?
+	if [ $rc -ne 0 ] ; then
+		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		printf  "Error - Upload failed with RC=%s\n" "$rc"
+		return 1
+	fi
 	if [ ! -z "$CONT_REPO" ] && ! cmp $CONT_REPO/test/os/x86_64/$TESTPKGNAM $TESTPKGNAM ; then
 		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
 		printf  "Error - Package File %s corrupt of missing after upload\n" \
@@ -188,6 +194,7 @@ function testArmIndex {
 function testDownload {
 	STARTTIME=$(date +%s)
 	printf "*********** testDownload start **********\n"
+	rm client.x86_64/var/cache/pacman/pkg/$TESTPKGNAM
 	pacman -Sw $PACMAN_OPT --config $THISDIR/pacman.x86_64.conf binutils-efi
 	# This package does not exist in official repos, it was just uploaded
 	if [ $? -ne 0 ]	; then
@@ -209,6 +216,7 @@ function testDownload {
 ##### Test: Loading a X86 package from public ################################
 function testLoadX86Pkg {
 	STARTTIME=$(date +%s)
+	rm client.x86_64/var/cache/pacman/pkg/pacman-*-x86_64.pkg.tar.xz
 	printf "*********** testLoadX86Pkg start **********\n"
 	pacman -Sw $PACMAN_OPT --config $THISDIR/pacman.x86_64.conf pacman
 	if [ $? -ne 0 ]	; then
@@ -236,6 +244,7 @@ function testLoadX86Pkg {
 ##### Test: Loading a ARM package from public ################################
 function testLoadArmPkg {
 	STARTTIME=$(date +%s)
+	rm client.armv6h/var/cache/pacman/pkg/pacman-*-armv6h.pkg.tar.xz
 	printf "*********** testLoadArmPkg start **********\n"
 	pacman -Sw $PACMAN_OPT --config $THISDIR/pacman.armv6h.conf pacman
 	if [ $? -ne 0 ]	; then
