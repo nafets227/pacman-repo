@@ -29,9 +29,6 @@ location ~ ^/(?<repo>core|extra|community|multilib|testing|community-testing|mul
     return 404;
 }
 
-resolver		127.0.0.11 ipv6=off;
-
-
 location @handle_redirect {
     set $saved_redirect_location '$upstream_http_location';
     proxy_pass $saved_redirect_location;
