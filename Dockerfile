@@ -35,14 +35,16 @@ RUN \
     pacman -S --needed --noconfirm \
         nginx \
         perl \
-        perl-fcgi
-
-# Remove temporary files to save space
-RUN \
-	paccache -r -k0 && \
+        perl-fcgi && \
+    paccache -r -k0 && \
 	rm -rf /usr/share/man/* && \
 	rm -rf /tmp/* && \
 	rm -rf /var/tmp/*
+
+RUN \
+    sed -e 's:bsdtar -xf :bsdtar --no-xattrs --no-fflags -xf :' \
+        </usr/bin/repo-add \
+        >/usr/local/bin/repo-add
 
 EXPOSE 80 443
 CMD /usr/local/bin/start.sh

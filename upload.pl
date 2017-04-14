@@ -246,7 +246,7 @@ sub uploadPkg {
 	#### Last recreate the database files ####
 	print "<h1>Recreating database</h1>\n";
 
-	my $output = qx(repo-add $dest_dir/$repo.db.tar.gz $destfile 2>&1);
+	my $output = qx(/usr/local/bin/repo-add $dest_dir/$repo.db.tar.gz $destfile 2>&1);
 	foreach my $line (split /[\r\n]+/, $output) {
 		print "$line<br>\n";
 	}
