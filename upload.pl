@@ -193,7 +193,15 @@ sub uploadPkg {
 	my $dest_dir = $template;
 	$dest_dir =~ s/\$root/$root/g;
 	$dest_dir =~ s/\$repo/$repo/g;
-	$dest_dir =~ s/\$arch/$arch/g;
+	if ( $arch == "any" ) {
+		# @TODO: if we support multiple architecture we need to copy
+		#        the package in ALL architecrutre directories.
+		$dest_dir =~ s/\$arch/x86_64/g;
+	}
+	else {
+		$dest_dir =~ s/\$arch/$arch/g;
+	}
+
 
 	my $dest_fnam = "$pkgMeta{'Name'}-$pkgMeta{'Version'}-$pkgMeta{'Architecture'}";
 
@@ -238,7 +246,7 @@ sub uploadPkg {
 	#### Last recreate the database files ####
 	print "<h1>Recreating database</h1>\n";
 
-	my $output = qx(repo-add $dest_dir/$repo.db.tar.gz $destfile);
+	my $output = qx(repo-add $dest_dir/$repo.db.tar.gz $destfile 2>&1);
 	foreach my $line (split /[\r\n]+/, $output) {
 		print "$line<br>\n";
 	}
