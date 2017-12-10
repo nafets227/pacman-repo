@@ -14,101 +14,130 @@ function getDir {
 
 ##############################################################################
 function makePacmanConf {
-	arch=${1-"x86_64"}
-	rc=0
+	local arch=${1-"x86_64"}
+	local rc=0
+	local CLIDIR=$THISDIR/client.$arch
+	local PACMAN_CONF=$CLIDIR/etc/pacman.conf
+
+	printf "********** makePacmanConf $arch start ***********\n"
 
 	mkdir -p \
-		$THISDIR/client.$arch/var/lib/pacman       \
-		$THISDIR/client.$arch/var/cache/pacman/pkg
-	# we are keeping the /etc/pacman.d/gnupg in order to speed up.
-	# Creating new keyrings would take a long time...
-	#	$THISDIR/client.$arch/etc/pacman.d/gnupg
-	# We are not creating it either, because if this dir does not exist
-	# it will trigger key generation below.
+		$CLIDIR/var/lib/pacman       \
+		$CLIDIR/var/cache/pacman/pkg \
+		$CLIDIR/etc/pacman.d
 
-	cat >$THISDIR/pacman.$arch.conf <<-EOF
-	[options]
-	HoldPkg      = pacman glibc
-	CheckSpace
+	cat >$PACMAN_CONF <<-EOF
+		[options]
+		HoldPkg      = pacman glibc
+		CheckSpace
 
-	SigLevel    = Required DatabaseOptional
-	LocalFileSigLevel = Optional
+		SigLevel    = Required DatabaseOptional
+		LocalFileSigLevel = Optional
 
-	# Settings for test repositories in our architecture
-	Architecture = $arch
+		# Settings for test repositories in our architecture
+		Architecture = $arch
 
-	# Standard Values:
-	#RootDir     = /
-	#DBPath      = /var/lib/pacman/
-	#CacheDir    = /var/cache/pacman/pkg/
-	#LogFile     = /var/log/pacman.log
-	#GPGDir      = /etc/pacman.d/gnupg/
-	#HookDir     = /etc/pacman.d/hooks/
+		# Standard Values:
+		#RootDir     = /
+		#DBPath      = /var/lib/pacman/
+		#CacheDir    = /var/cache/pacman/pkg/
+		#LogFile     = /var/log/pacman.log
+		#GPGDir      = /etc/pacman.d/gnupg/
+		#HookDir     = /etc/pacman.d/hooks/
 
-	RootDir      = $THISDIR/client.$arch
-	DBPath       = $THISDIR/client.$arch/var/lib/pacman/
-	CacheDir     = $THISDIR/client.$arch/var/cache/pacman/pkg/
-	GPGDir       = $THISDIR/client.$arch/etc/pacman.d/gnupg/
+		RootDir      = $THISDIR/client.$arch
+		DBPath       = $THISDIR/client.$arch/var/lib/pacman/
+		CacheDir     = $THISDIR/client.$arch/var/cache/pacman/pkg/
+		LogFile      = $THISDIR/client.$arch/var/log/pacman.log
+		GPGDir       = $THISDIR/client.$arch/etc/pacman.d/gnupg/
+		HookDir      = $THISDIR/client.$arch/etc/pacman.d/hooks/
 
-	[core]
-	Server = $URL/\$repo/os/\$arch
-
-	[extra]
-	Server = $URL/\$repo/os/\$arch
-
-	[community]
-	Server = $URL/\$repo/os/\$arch
-	EOF
+		[core]
+		Server = $URL/\$repo/os/\$arch
+		EOF
 
 	# Add Test repository only for x86_64 since our testpackage is
 	# only available on that architecture and any other architecture
 	# would create errors when trying to load the database that will
 	# not be initialised because no upload is executed.
 	if [ $arch == "x86_64" ] ; then
-		cat >>$THISDIR/pacman.$arch.conf <<-EOF
+		cat >>$PACMAN_CONF <<-EOF
 
 		##### This is for testing our local repository
 		[test]
-		SigLevel = Optional # do not require signed packages or DB´s
+		SigLevel = Optional # do not require signed packages or DBs
 		Server = $URL/\$repo/os/\$arch
 		EOF
+		PKGURL="https://www.archlinux.org/packages/core/any/archlinux-keyring/download"
+	elif [ $arch == "armv6h" ] ; then
+		cat >>$PACMAN_CONF <<-EOF
+		#additional core server
+		Server = http://mirror.archlinuxarm.org/\$arch/\$repo
+		EOF
+		PKGURL="http://mirror.archlinuxarm.org/armv6h/core/archlinuxarm-keyring-20140119-1-any.pkg.tar.xz"
+	else
+		printf "ERROR: Unsupported architecture %s.\n" "$arch"
+		return 1
 	fi
 
-	if [ ! -d $THISDIR/client.$arch/etc/pacman.d/gnupg ] ; then
-		STARTTIME=$(date +%s)
-		printf "********** InitPacman $arch start ***********\n"
-		mkdir -p $THISDIR/client.$arch/etc/pacman.d/gnupg
-		# Initialize Pacman Signature DB
-
-		pacman-key --config $THISDIR/pacman.$arch.conf --init
-		rc=$?
-		if [ $rc -ne 0 ] ; then
-			dummy=bla
-		elif [ $arch == "x86_64" ] ; then
-			pacman-key --config $THISDIR/pacman.$arch.conf --populate archlinux || return 1
-			rc=$?
-		else
-			##### Install archlinuxarm Keyring #####
-			#get final URL after many redirects and download it
-			FINALURL=$( \
-				curl -I -JL https://www.archlinux.org/packages/core/any/archlinux-keyring/download | \
-				sed -n 's/^Location: \(.*\)$/\1/p' | \
-				tail -1 |\
-				sed 's:[\n\r]::g' ) && \
-			PKGFILE=$THISDIR/client.$arch/$(basename $FINALURL) && \
-			curl -o $PKGFILE $FINALURL && \
-			pacman -U $PACMAN_OPT $PKGFILE && \
-			pacman-key --config $THISDIR/pacman.$arch.conf --populate archlinuxarm
-			rc=$?
-		fi
-		if [ $rc -eq 0 ]; then
-			printf "********** InitPacman $arch success ***********\n"
-		else
-			docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
-			printf "********** InitPacman $arch Error ***********\n"
-			return 1
-		fi
+	# we are keeping the /etc/pacman.d/gnupg in order to speed up.
+	# Creating new keyrings would take a long time...
+	# in other words: reuse existing local key if present
+	if [ ! -e $CLIDIR/etc/pacman.d/gnupg/pubring.gpg ] ; then
+		printf "********** makePacmanConf $arch GPG Init ***********\n"
+		pacman-key --config $PACMAN_CONF --init
+		rc=$? ; if [ $rc -ne 0 ] ; then return $rc; fi
+	else
+		printf "********** makePacmanConf $arch GPG reuse ***********\n"
 	fi
+
+	#download package by hand because GPG keyring is not yet setup!
+	curl -L \
+		-o $CLIDIR/archlinux-keyring.pkg.tar.xz $PKGURL
+	rc=$? ; if [ $rc -ne 0 ] ; then return $rc; fi
+
+	#install it using -U from local filesystem. This avoids GPG signature checks
+	pacman $PACMAN_OPT \
+		--config $PACMAN_CONF \
+		--noscriptlet \
+		-U $CLIDIR/archlinux-keyring.pkg.tar.xz
+	rc=$? ; if [ $rc -ne 0 ] ; then return $rc; fi
+
+	# Now import the keys ...
+	pacman-key \
+		--config $PACMAN_CONF \
+		--add $CLIDIR/usr/share/pacman/keyrings/archlinux*.gpg
+	rc=$? ; if [ $rc -ne 0 ] ; then return $rc; fi
+
+	# ... and trust all of them.
+	# Code snippet cpied from pacman-key --populate
+	local -A trusted_ids
+	while IFS=: read key_id _; do
+		# skip blank lines, comments; there are valid in this file
+		[[ -z $key_id || ${key_id:0:1} = \# ]] && continue
+		
+		# Mark thie ley to be lsigned
+		trusted_ids[$key_id]=archlinux
+	done < $CLIDIR//usr/share/pacman/keyrings/archlinux*-trusted
+	
+	pacman-key \
+		--config $PACMAN_CONF \
+		--lsign-key "${!trusted_ids[@]}"
+	rc=$? ; if [ $rc -ne 0 ] ; then return $rc; fi
+		 
+	gpg \
+		--homedir $CLIDIR/etc/pacman.d/gnupg \
+		--no-permission-warning \
+		--import-ownertrust $CLIDIR/usr/share/pacman/keyrings/archlinux*-trusted
+	rc=$? ; if [ $rc -ne 0 ] ; then return $rc; fi
+
+	# Finally create the link in our test directory for backward compatibility		
+	rm pacman.$arch.conf 2>/dev/null
+	ln -s $PACMAN_CONF pacman.$arch.conf
+
+	printf "********** makePacmanConf $arch success ***********\n"
+	
+	return 0	
 }
 ##### Test: Uploading a package ##############################################
 function testUpload {
@@ -158,10 +187,10 @@ function testX86Index {
 		printf "Error - pacman could not load the repositories through proxy\n"
 		return 1
 	fi
-	if [ ! -f client.x86_64/var/lib/pacman/sync/community.db ] ; then
+	if [ ! -f client.x86_64/var/lib/pacman/sync/core.db ] ; then
 		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
 		printf  "Error - pacman did not write %s \n" \
-			"client.x86_64/var/lib/pacman/sync/community.db"
+			"client.x86_64/var/lib/pacman/sync/core.db"
 		return 1
 	fi
 
@@ -179,10 +208,10 @@ function testArmIndex {
 		printf "Error - pacman could not load the repositories through proxy\n"
 		return 1
 	fi
-	if [ ! -f client.armv6h/var/lib/pacman/sync/community.db ] ; then
+	if [ ! -f client.armv6h/var/lib/pacman/sync/core.db ] ; then
 		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
 		printf  "Error - pacman did not write %s \n" \
-			"client.armv6h/var/lib/pacman/sync/community.db"
+			"client.armv6h/var/lib/pacman/sync/core.db"
 		return 1
 	fi
 
@@ -370,7 +399,7 @@ elif [ "$1" == "--client" ]; then
 	testclient
 elif [ "$1" == "--url" ]; then
 	shift
-	testurl $@ || printf "All Test succesfully passed.\n"
+	testurl $@ && printf "All Test succesfully passed.\n"
 else
 	testall
 fi
