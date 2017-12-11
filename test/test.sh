@@ -389,11 +389,7 @@ export PACMAN_OPT="-dd --noconfirm"
 URL="http://localhost:8084"
 CURL_USER=""
 
-# check syntax to avoid actions that will fail anyhow.
-perl -c $THISDIR/../upload.pl
-if [ $? -ne 0 ]; then
-	printf "Syntax Error in Perl. Aborting test.\n"
-elif [ "$1" == "--perllocal" ]; then
+if [ "$1" == "--perllocal" ]; then
 	testperllocal
 elif [ "$1" == "--client" ]; then
 	testclient
