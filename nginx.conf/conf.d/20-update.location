@@ -3,7 +3,7 @@
     # You may want add authentication to /archlinux.upload on a reverse proxy before this
     location /archlinux.upload/(?<repo>[^/]+)/?$ {
 
-        client_body_temp_path      /srv/pacman-repo/upload/;
+        client_body_temp_path      /srv/pacman-repo/archlinux.upload/;
         client_body_in_file_only   on;
         client_body_buffer_size    128K;
         client_max_body_size       1000M;
@@ -15,3 +15,16 @@
         fastcgi_pass unix:/run/upload.sock;
     }
 
+location /archlinuxarm.upload/(?<repo>[^/]+)/?$ {
+
+        client_body_temp_path      /srv/pacman-repo/archlinuxarm.upload/;
+        client_body_in_file_only   on;
+        client_body_buffer_size    128K;
+        client_max_body_size       1000M;
+
+	include /etc/nginx/fastcgi.conf;
+
+	fastcgi_param NGINX_REQUEST_BODY_FILE $request_body_file;
+	fastcgi_param NAFETS227_PACMAN_REPO_NAME $repo;
+        fastcgi_pass unix:/run/upload.sock;
+}

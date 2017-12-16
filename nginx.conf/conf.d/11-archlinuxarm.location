@@ -1,12 +1,12 @@
-location /archlinux {
-location ~ ^/archlinux/(?<repo>core|extra|community|multilib|testing|community-testing|multilib-testing|gnome-unsstable|kde-unstable|alarm|aur)/os/(?<arch>[^/]+)/(?<pkg>[^/]+)$ {
+location /archlinuxarm {
+  location ~ ^/archlinuxarm/(?<repo>core|extra|community|multilib|testing|community-testing|multilib-testing|gnome-unsstable|kde-unstable|alarm|aur)/os/(?<arch>[^/]+)/(?<pkg>[^/]+)$ {
     # Handle official Arch Linux repositories as caching only.
     # path for request: /$repo/os/$arch/<package>
 
 
     # Requests for package db and signature files should redirect upstream 
     # without caching
-    location ~ ^/archlinux/.*\.(db|sig)$ {
+    location ~ ^/archlinuxarm/.*\.(db|sig)$ {
         autoindex   on;
 
         set $pkgtype "repo";
@@ -20,28 +20,29 @@ location ~ ^/archlinux/(?<repo>core|extra|community|multilib|testing|community-t
     # Requests for actual packages should be served directly from cache if 
     # available. If not available, retrieve and save the package from an 
     # upstream mirror.
-    location ~ ^/archlinux/.*\.tar\.xz$ {
-        root        /srv/pacman-cache/archlinux;
+    location ~ ^/archlinuxarm/.*\.tar\.xz$ {
+        root        /srv/pacman-cache/archlinuxarm;
         autoindex   on;
         set $pkgtype "pkg";
         try_files $uri @pkg_mirror;
     }
 
     return 404;
-}
+  }
 
-location @handle_redirect {
+  location @handle_redirect {
     set $saved_redirect_location '$upstream_http_location';
     proxy_pass $saved_redirect_location;
-}
+  }
 
-# Retrieve package from upstream mirrors and cache for future requests
+  # Retrieve package from upstream mirrors and cache for future requests
 location @pkg_mirror {
-    root                /srv/pacman-cache/archlinux;
+    root                /srv/pacman-cache/archlinuxarm;
     proxy_store         on;
     proxy_redirect      off;
     proxy_store_access  user:rw group:rw all:r;
-    proxy_pass          http://mirror.de.leaseweb.net/archlinux/$repo/os/$arch/$pkg;
+    proxy_pass          http://mirror.archlinuxarm.org/$arch/$repo/$pkg;
+    proxy_redirect      $uri /$arch/$repo/$pkg;
 
     proxy_intercept_errors on;
     recursive_error_pages on;
@@ -49,23 +50,20 @@ location @pkg_mirror {
 }
 
 location @pkg_nocache {
-    proxy_pass          http://mirror.de.leaseweb.net/archlinux/$repo/os/$arch/$pkg;
+    proxy_pass          http://mirror.archlinuxarm.org/$arch/$repo/$pkg;
+#    proxy_redirect      $uri /$arch/$repo/$pkg;
 
     proxy_intercept_errors on;
     recursive_error_pages on;
     error_page 301 302 307 = @handle_redirect;
 }
 
-  # for compatibility redirect uploads  
-  rewrite ^/(?<repo>[^/]+)/upload/?$ /archlinux.upload/$repo/ permanent
-
   # serve any locally uploaded files directly
-  location /archlinux {
-    root        /srv/pacman-repo/archlinux;
+  location /archlinuxarm {
+    root        /srv/pacman-repo/archlinuxarm;
     autoindex   on;
   }
 }
 
   
-} # location /archlinux
-
+} # location /archlinuxarm
