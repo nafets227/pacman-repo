@@ -1,11 +1,12 @@
-location ~ ^/(?<repo>core|extra|community|multilib|testing|community-testing|multilib-testing|gnome-unsstable|kde-unstable|alarm|aur)/os/(?<arch>[^/]+)/(?<pkg>[^/]+)$ {
+location /archlinux {
+location ~ ^/archlinux/(?<repo>core|extra|community|multilib|testing|community-testing|multilib-testing|gnome-unsstable|kde-unstable|alarm|aur)/os/(?<arch>[^/]+)/(?<pkg>[^/]+)$ {
     # Handle official Arch Linux repositories as caching only.
     # path for request: /$repo/os/$arch/<package>
 
 
     # Requests for package db and signature files should redirect upstream 
     # without caching
-    location ~ ^/.*\.(db|sig)$ {
+    location ~ ^/archlinux/.*\.(db|sig)$ {
         autoindex   on;
 
         set $pkgtype "repo";
@@ -19,8 +20,8 @@ location ~ ^/(?<repo>core|extra|community|multilib|testing|community-testing|mul
     # Requests for actual packages should be served directly from cache if 
     # available. If not available, retrieve and save the package from an 
     # upstream mirror.
-    location ~ ^/.*\.tar\.xz$ {
-        root        /srv/pacman-cache;
+    location ~ ^/archlinux/.*\.tar\.xz$ {
+        root        /srv/pacman-cache/archlinux;
         autoindex   on;
         set $pkgtype "pkg";
         try_files $uri @pkg_mirror;
@@ -36,7 +37,7 @@ location @handle_redirect {
 
 # Retrieve package from upstream mirrors and cache for future requests
 location @pkg_mirror {
-    root                /srv/pacman-cache;
+    root                /srv/pacman-cache/archlinux;
     proxy_store         on;
     proxy_redirect      off;
     proxy_store_access  user:rw group:rw all:r;
@@ -79,3 +80,17 @@ location @arm_nocache {
     recursive_error_pages on;
     error_page 301 302 307 = @handle_redirect;
 }
+
+  # for compatibility redirect uploads  
+  rewrite ^/(?<repo>[^/]+)/upload/?$ /archlinux.upload/$repo/ permanent
+
+  # serve any locally uploaded files directly
+  location / {
+    root        /srv/pacman-repo;
+    autoindex   on;
+  }
+}
+
+  
+} # location /archlinux
+

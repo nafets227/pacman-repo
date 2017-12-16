@@ -1,10 +1,6 @@
-location / {
-    root        /srv/pacman-repo;
-    autoindex   on;
-
     # Forward any updates to localhost:5000 (where our FastCGI Server is 
     # expected to listen) and receive full file before
-    location ~ ^/(?<repo>[^/]+)/upload/?$ {
+    location /archlinux.upload/(?<repo>[^/]+)/?$ {
 
     # Authentication disabled here. We expect a reverse proxy before this
     # instance to do it.
@@ -23,6 +19,4 @@ location / {
 	fastcgi_param NAFETS227_PACMAN_REPO_NAME $repo;
         fastcgi_pass unix:/run/upload.sock;
     }
-
-}
 
