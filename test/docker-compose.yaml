@@ -16,3 +16,6 @@ services:
         - "80"
     ports:
         - "8084:80"
+    environment:
+        - RESOLVER=${RESOLVER}
+        - NGINX_LOGLVL=${NGINX_LOGLVL}

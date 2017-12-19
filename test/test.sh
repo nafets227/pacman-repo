@@ -381,6 +381,8 @@ function testperllocal {
 
 #### Main ####################################################################
 export THISDIR=$(getDir)
+export RESOLVER="$(sed -n -e 's/nameserver \(.*\)/\1/p' </etc/resolv.conf)"
+export NGINX_LOGLVL=""
 export DOCK_COMP="docker-compose -f $THISDIR/docker-compose.yaml -p pacman-repo"
 export TESTPKGNAM="binutils-efi-2.27-1.90-x86_64.pkg.tar.xz"
 export PACMAN_OPT="-dd --noconfirm" 

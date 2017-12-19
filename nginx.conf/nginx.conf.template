@@ -1,10 +1,8 @@
 
 worker_processes  1;
 
-error_log  /var/log/nginx/error.log warn;
 
-#debug:
-error_log  /var/log/nginx/error.log debug;
+error_log  /var/log/nginx/error.log ${NGINX_LOGLVL};
 pid        /var/run/nginx.pid;
 
 events {
@@ -27,7 +25,7 @@ http {
 
 	keepalive_timeout 65;
 
-	resolver 10.208.1.2 ipv6=off; # Kubernetes DNS
+	resolver ${RESOLVER} ipv6=off;
 
 	include /etc/nginx/conf.d/*.conf;
 }
