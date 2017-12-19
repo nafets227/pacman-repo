@@ -279,6 +279,22 @@ sub printEnv {
 
 	return OK;
 }
+
+#############################################################################
+##### handleReq #############################################################
+##############################################################################
+sub abortReq {
+	my $status = shift;
+	my $userMsg = shift;
+	my $logMsg = shift;
+
+	print STDERR "$logMsg\n";
+	print "Status: $status\n\n";
+	print "$userMsg\n";
+		
+	return;
+}	
+
 #############################################################################
 ##### handleReq #############################################################
 ##############################################################################
@@ -294,68 +310,67 @@ sub handleReq {
 
 	# Validate Input parameters
 	if ( ! defined $pkgfile or ! length $pkgfile ) {
-		print STDERR "No filename received in FastCGI variable NGINX_REQUEST_BODY_FILE\n";
-		print "Status: 500\n\n";
-		print "Internal Error - Missing Filename\n";
+		abortReq(500,
+			"Internal Error - Missing Filename",
+			"No filename received in FastCGI variable NGINX_REQUEST_BODY_FILE");
 		return;
 	}
 	elsif ( !isSafeString($pkgfile)) {
-		print STDERR 
-			sprintf("invalid characters in tmpfile \"%s\"\n", $pkgfile);
-		print "Status: 500\n\n";
-		print "Internal Error - Invalid Filename\n";
+		abortReq(500,
+			"invalid characters in tmpfile \"$pkgfile\"",
+			"Internal Error - Invalid Filename");
 		return;
 	}
-	elsif ( ! defined $docroot or ! length $docroot or !isSafeString($docroot)) {
-		print STDERR "Invalid DOCUMENT_ROOT environment";
-		if ( defined $docroot ) { 
-			print STDERR " \"$docroot\"";
-		}
-		print STDERR "\n";
-		print "Status: 500\n\n";
-		print "Internal Error -DOCUMENT_ROOT\n";
+	elsif ( ! defined $docroot ) {
+		abortReq(500,
+			"Internal Error - DOCUMENT_ROOT",
+			"Invalid DOCUMENT_ROOT environment - undefined");
 		return;
 	}
-	elsif ( ! defined $docuri or ! length $docuri or !isSafeString($docuri)) {
-		print STDERR "Invalid DOCUMENT_URI environment";
-		if ( defined $docuri ) { 
-			print STDERR " \"$docuri\"";
-		}
-		print STDERR "\n";
-		print "Status: 500\n\n";
-		print "Internal Error -DOCUMENT_URI\n";
+	elsif ( ! length $docroot or !isSafeString($docroot)) {
+		abortReq(500,
+			"Internal Error - DOCUMENT_ROOT",
+			"Invalid DOCUMENT_ROOT environment - \"$docroot\"");
+		return;
+	}
+	elsif ( ! defined $docuri ) {
+		abortReq(500,
+			"Internal Error - DOCUMENT_URI",
+			"Invalid DOCUMENT_URI environmen - undefined");
+		return;
+	}
+	elsif ( ! length $docuri or !isSafeString($docuri)) {
+		abortReq(500,
+			"Internal Error - DOCUMENT_URI",
+			"Invalid DOCUMENT_URI environmen - \"$docuri\"");
 		return;
 	}
 	elsif ( verifyPkg($pkgfile) ne OK ) {
-		printf STDERR "Invalid package file $pkgfile supplied.\n";
-		print "Status: 500\n\n";
-		print "Invalid package File supplied - not in .pkg.tar.xz Format\n";
+		abortReq(400,
+			"Invalid package File supplied - not in .pkg.tar.xz Format",
+			"Invalid package file $pkgfile supplied");
 		return;
 	}
-	else { 
-		# docuri should be like /<repo>/upload/
-		if (  $docuri !~ /^\/(?<repo>.*)\/upload\/$/ ) {
-			print STDERR
-		       		sprintf("Invalid DOCUMENT_URI %s - not /<repo>/upload/\n",
-				       	$docuri);
-			print "Status: 500\n\n";
-			print "Internal Error -DOCUMENT_URI subdir\n";
-			return;
+	# docuri should be like /<repo>/upload/
+	elsif (  $docuri !~ /^\/(?<repo>.*)\/upload\/$/ ) {
+		abortReq(500,
+			"Internal Error -DOCUMENT_URI subdir",
+			"Invalid DOCUMENT_URI $docuri - not /<repo>/upload/");
+		return;
+	}
+	else {
+		{
+			my $repo = $+{'repo'};
+			open local *STDOUT, '>', \$response;
+			uploadPkg $pkgfile, $docroot, $repo;
+			$rc=$?;
 		}
-		else {
-			{
-				my $repo = $+{'repo'};
-				open local *STDOUT, '>', \$response;
-				uploadPkg $pkgfile, $docroot, $repo;
-				$rc=$?;
-			}
-			
-			if ($rc ne 0 ) {
-				print STDERR "Error in uploadPkg. RC=$rc\n";
-				print "Status: 500\n\n";
-				print "Internal Error in uploadPkg\n";
-				return;
-			}
+		
+		if ($rc ne 0 ) {
+			abortReq(500,
+				"Internal Error in uploadPkg",
+				"Error in uploadPkg. RC=$rc");
+			return;
 		}
 	}
 
