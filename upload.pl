@@ -105,6 +105,8 @@ sub isSafeString {
 ##### AnaylsePackage #########################################################
 ##############################################################################
 sub analysePkg {
+	my %pkgMeta;
+	my %EMPTY_HASH;
 	my $pkgfile = shift;
 	
 	print "<h1>Package Meta-Data</h1>\n";
@@ -113,6 +115,12 @@ sub analysePkg {
 	# interface and parsing
 	# see http://search.cpan.org/~apg/ALPM-3.06/lib/ALPM/Package.pod
 	my $output = qx(pacman -Qpi $pkgfile);
+	my $rc = $?;
+	if ($rc != 0) {
+		print STDERR "Error from pacman -Qpi. RC=$rc\n";
+		print "Error parsing package file\n";
+		return %EMPTY_HASH;
+	}
 	# Example Output:
 	# Name            : binutils-efi
 	# Version         : 2.27-1.90
@@ -120,7 +128,6 @@ sub analysePkg {
 	# Architecture    : x86_64
 	# ...
 
-	my %pkgMeta;
 	foreach my $line (split /[\r\n]+/, $output) {
 		print "$line<br>\n";
 		if ( $line =~ /^([\w ]+)\s*:\s*(.+)$/ ) {
@@ -138,7 +145,7 @@ sub analysePkg {
 		else {
 			print STDERR "Could not parse ouput-line from pacman: $line\n";
 			print "Error parsing package file\n";
-			return HTTP_BAD_REQUEST;
+			return %EMPTY_HASH;
 		}
 
 
@@ -171,7 +178,7 @@ sub verifyPkg {
 
 	# @TODO implement checks (maybe only support .pkg.tar.xz)
 	
-       	# actually we skip checks and pretend everyhing is ok.
+	# actually we skip checks and pretend everyhing is ok.
 	return OK;
 
 }
@@ -184,6 +191,9 @@ sub uploadPkg {
 	my $repo = shift;
 
 	my %pkgMeta = analysePkg($pkgfile);
+	if (scalar keys %pkgMeta eq 0) {
+		return ERR;
+	}
 
 	print "<h1>Uploading package</h1>\n";
 	##### identify target directory and filename #####
@@ -193,7 +203,7 @@ sub uploadPkg {
 	my $dest_dir = $template;
 	$dest_dir =~ s/\$root/$root/g;
 	$dest_dir =~ s/\$repo/$repo/g;
-	if ( $arch == "any" ) {
+	if ( $arch eq "any" ) {
 		# @TODO: if we support multiple architecture we need to copy
 		#        the package in ALL architecrutre directories.
 		$dest_dir =~ s/\$arch/x86_64/g;
@@ -274,27 +284,27 @@ sub printEnv {
 ##############################################################################
 sub handleReq {
 	my $r = shift;
+	
+	my $response = "";
 
-	print "Content-type:text/html\n\n";
-	print "<html>\n";
-	print "<head><title>Uploading of Pacman Packages</title></head>\n";
-	print "<body>\n";
-
-	printEnv;
-  
 	my $pkgfile = $ENV{"NGINX_REQUEST_BODY_FILE"};
 	my $docroot = $ENV{'DOCUMENT_ROOT'};
 	my $docuri = $ENV{'DOCUMENT_URI'};
+	my $rc = 0;
 
 	# Validate Input parameters
 	if ( ! defined $pkgfile or ! length $pkgfile ) {
 		print STDERR "No filename received in FastCGI variable NGINX_REQUEST_BODY_FILE\n";
+		print "Status: 500\n\n";
 		print "Internal Error - Missing Filename\n";
+		return;
 	}
 	elsif ( !isSafeString($pkgfile)) {
 		print STDERR 
 			sprintf("invalid characters in tmpfile \"%s\"\n", $pkgfile);
+		print "Status: 500\n\n";
 		print "Internal Error - Invalid Filename\n";
+		return;
 	}
 	elsif ( ! defined $docroot or ! length $docroot or !isSafeString($docroot)) {
 		print STDERR "Invalid DOCUMENT_ROOT environment";
@@ -302,7 +312,9 @@ sub handleReq {
 			print STDERR " \"$docroot\"";
 		}
 		print STDERR "\n";
+		print "Status: 500\n\n";
 		print "Internal Error -DOCUMENT_ROOT\n";
+		return;
 	}
 	elsif ( ! defined $docuri or ! length $docuri or !isSafeString($docuri)) {
 		print STDERR "Invalid DOCUMENT_URI environment";
@@ -310,11 +322,15 @@ sub handleReq {
 			print STDERR " \"$docuri\"";
 		}
 		print STDERR "\n";
+		print "Status: 500\n\n";
 		print "Internal Error -DOCUMENT_URI\n";
+		return;
 	}
 	elsif ( verifyPkg($pkgfile) ne OK ) {
 		printf STDERR "Invalid package file $pkgfile supplied.\n";
+		print "Status: 500\n\n";
 		print "Invalid package File supplied - not in .pkg.tar.xz Format\n";
+		return;
 	}
 	else { 
 		# docuri should be like /<repo>/upload/
@@ -322,20 +338,40 @@ sub handleReq {
 			print STDERR
 		       		sprintf("Invalid DOCUMENT_URI %s - not /<repo>/upload/\n",
 				       	$docuri);
+			print "Status: 500\n\n";
 			print "Internal Error -DOCUMENT_URI subdir\n";
+			return;
 		}
-		else
-		{
-	        	my $repo = $+{'repo'};
-
-			uploadPkg $pkgfile, $docroot, $repo;
+		else {
+			{
+				my $repo = $+{'repo'};
+				open local *STDOUT, '>', \$response;
+				uploadPkg $pkgfile, $docroot, $repo;
+				$rc=$?;
+			}
+			
+			if ($rc ne 0 ) {
+				print STDERR "Error in uploadPkg. RC=$rc\n";
+				print "Status: 500\n\n";
+				print "Internal Error in uploadPkg\n";
+				return;
+			}
 		}
 	}
+
+	print "Status: 200\n";
+	print "Content-type:text/html\n\n";
+	print "<html>\n";
+	print "<head><title>Uploading of Pacman Packages</title></head>\n";
+	print "<body>\n";
+
+	printEnv;
+	print $response;
 
 	print "</body>\n";
 	print "</html>\n";
 
-	return OK;
+	return;
 }
 
 
@@ -352,7 +388,7 @@ sub main_fcgi {
 	my $request = FCGI::Request(\*STDIN, \*STDOUT, \*STDERR, \%ENV, $sock);
 
 	while($request->Accept() >= 0) {
-	        handleReq $request;
+		handleReq $request;
 	}
 
 	$request->Finish();

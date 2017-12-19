@@ -1,4 +1,4 @@
-location /archlinuxarm {
+location /archlinuxarm/ {
 	location ~ ^/archlinuxarm/(?<repo>core|extra|community|multilib|testing|community-testing|multilib-testing|gnome-unsstable|kde-unstable|alarm|aur)/os/(?<arch>[^/]+)/(?<pkg>[^/]+)$ {
 	    # Handle official Arch Linux repositories as caching only.
 	    # path for request: /$repo/os/$arch/<package>
@@ -10,9 +10,9 @@ location /archlinuxarm {
 
 			set $pkgtype "repo";
 
-			# Trick: foward to @pkg_nocache
+			# Trick: foward to @arm_nocache
 			recursive_error_pages on;
-			error_page 404 = @pkg_nocache;
+			error_page 404 = @arm_nocache;
 			return 404;
 		}
 
@@ -23,46 +23,40 @@ location /archlinuxarm {
 			root /srv/pacman-cache/archlinuxarm;
 			autoindex on;
 			set $pkgtype "pkg";
-			try_files $uri @pkg_mirror;
+			try_files $uri @arm_mirror;
 		}
 
 		return 404;
 	}
 
-	location @handle_redirect {
-		set $saved_redirect_location '$upstream_http_location';
-		proxy_pass $saved_redirect_location;
-	}
-
-	# Retrieve package from upstream mirrors and cache for future requests
-	location @pkg_mirror {
-		root /srv/pacman-cache/archlinuxarm;
-		proxy_store on;
-		proxy_redirect off;
-		proxy_store_access user:rw group:rw all:r;
-		proxy_pass http://mirror.archlinuxarm.org/$arch/$repo/$pkg;
-		proxy_redirect $uri /$arch/$repo/$pkg;
-
-		proxy_intercept_errors on;
-		recursive_error_pages on;
-		error_page 301 302 307 = @handle_redirect;
-	}
-
-	location @pkg_nocache {
-		proxy_pass http://mirror.archlinuxarm.org/$arch/$repo/$pkg;
-		#    proxy_redirect      $uri /$arch/$repo/$pkg;
-
-		proxy_intercept_errors on;
-		recursive_error_pages on;
-		error_page 301 302 307 = @handle_redirect;
-	}
-
 	# serve any locally uploaded files directly
-	location /archlinuxarm {
+	location /archlinuxarm/ {
 		root /srv/pacman-repo/archlinuxarm;
 		autoindex on;
   	}
-}
-
   
 } # location /archlinuxarm
+
+# Retrieve package from upstream mirrors and cache for future requests
+location @arm_mirror {
+	root /srv/pacman-cache/archlinuxarm;
+	proxy_store on;
+	proxy_redirect off;
+	proxy_store_access user:rw group:rw all:r;
+	proxy_pass http://mirror.archlinuxarm.org/$arch/$repo/$pkg;
+	proxy_redirect $uri /$arch/$repo/$pkg;
+
+	proxy_intercept_errors on;
+	recursive_error_pages on;
+	error_page 301 302 307 = @handle_redirect;
+}
+
+location @arm_nocache {
+	proxy_pass http://mirror.archlinuxarm.org/$arch/$repo/$pkg;
+	#    proxy_redirect      $uri /$arch/$repo/$pkg;
+
+	proxy_intercept_errors on;
+	recursive_error_pages on;
+	error_page 301 302 307 = @handle_redirect;
+}
+

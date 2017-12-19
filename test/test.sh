@@ -52,8 +52,6 @@ function makePacmanConf {
 		GPGDir       = $THISDIR/client.$arch/etc/pacman.d/gnupg/
 		HookDir      = $THISDIR/client.$arch/etc/pacman.d/hooks/
 
-		[core]
-		Server = $URL/\$repo/os/\$arch
 		EOF
 
 	# Add Test repository only for x86_64 since our testpackage is
@@ -62,6 +60,8 @@ function makePacmanConf {
 	# not be initialised because no upload is executed.
 	if [ $arch == "x86_64" ] ; then
 		cat >>$PACMAN_CONF <<-EOF
+		[core]
+		Server = $URL/\$repo/os/\$arch
 
 		##### This is for testing our local repository
 		[test]
@@ -71,8 +71,14 @@ function makePacmanConf {
 		PKGURL="https://www.archlinux.org/packages/core/any/archlinux-keyring/download"
 	elif [ $arch == "armv6h" ] ; then
 		cat >>$PACMAN_CONF <<-EOF
-		#additional core server
-		Server = http://mirror.archlinuxarm.org/\$arch/\$repo
+		[core]
+		Server = $URL/archlinuxarm/\$repo/os/\$arch
+
+		# test repository disabled as we do not yet upload something so
+		# no index files are available.
+		#[test]
+		#SigLevel = Optional # do not require signed packages or DBs
+		#Server = $URL/archlinuxarm/\$repo/os/\$arch
 		EOF
 		PKGURL="http://mirror.archlinuxarm.org/armv6h/core/archlinuxarm-keyring-20140119-1-any.pkg.tar.xz"
 	else
@@ -147,29 +153,29 @@ function testUpload {
 		printf "Error - Package File %s exists before RUN\n" "repo/test/$TESTPKGNAM"
 		return 1
 	fi
-	curl -fi $CURL_USER --data-binary @$TESTPKGNAM $URL/test/upload/
+	curl -Lfi $CURL_USER --data-binary @$TESTPKGNAM $URL/test/upload/
 	rc=$?
 	if [ $rc -ne 0 ] ; then
 		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
 		printf  "Error - Upload failed with RC=%s\n" "$rc"
 		return 1
 	fi
-	if [ ! -z "$CONT_REPO" ] && ! cmp $CONT_REPO/test/os/x86_64/$TESTPKGNAM $TESTPKGNAM ; then
+	if [ ! -z "$CONT_REPO" ] && ! cmp $CONT_REPO/archlinux/test/os/x86_64/$TESTPKGNAM $TESTPKGNAM ; then
 		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
 		printf  "Error - Package File %s corrupt of missing after upload\n" \
-			"$CONT_REPO/test/os/x86_64/$TESTPKGNAM"
+			"$CONT_REPO/archlinux/test/os/x86_64/$TESTPKGNAM"
 		return 1
 	fi
-	if [ ! -z "$CONT_REPO" ] &&  ! [ -f $CONT_REPO/test/os/x86_64/test.db.tar.gz ] ; then
+	if [ ! -z "$CONT_REPO" ] &&  ! [ -f $CONT_REPO/archlinux/test/os/x86_64/test.db.tar.gz ] ; then
 		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
 		printf  "Error - Repo Database %s missing after upload\n" \
-			"$CONT_REPO/test/test.db.tar.gz"
+			"$CONT_REPO/archlinux/test/test.db.tar.gz"
 		return 1
 	fi
-	if [ ! -z "$CONT_REPO" ] && ! [ -L $CONT_REPO/test/os/x86_64/test.db ] ; then
+	if [ ! -z "$CONT_REPO" ] && ! [ -L $CONT_REPO/archlinux/test/os/x86_64/test.db ] ; then
 		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
 		printf  "Error - Repo Database %s missing after upload\n" \
-			"$CONT_REPO/test/test.db"
+			"$CONT_REPO/archlinux/test/test.db"
 		return 1
 	fi
 
@@ -223,7 +229,7 @@ function testArmIndex {
 function testDownload {
 	STARTTIME=$(date +%s)
 	printf "*********** testDownload start **********\n"
-	rm client.x86_64/var/cache/pacman/pkg/$TESTPKGNAM
+	rm client.x86_64/var/cache/pacman/pkg/$TESTPKGNAM >/dev/null 2>&1
 	pacman -Sw $PACMAN_OPT --config $THISDIR/pacman.x86_64.conf binutils-efi
 	# This package does not exist in official repos, it was just uploaded
 	if [ $? -ne 0 ]	; then
@@ -245,7 +251,7 @@ function testDownload {
 ##### Test: Loading a X86 package from public ################################
 function testLoadX86Pkg {
 	STARTTIME=$(date +%s)
-	rm client.x86_64/var/cache/pacman/pkg/pacman-*-x86_64.pkg.tar.xz
+	rm client.x86_64/var/cache/pacman/pkg/pacman-*-x86_64.pkg.tar.xz >/dev/null 2>&1
 	printf "*********** testLoadX86Pkg start **********\n"
 	pacman -Sw $PACMAN_OPT --config $THISDIR/pacman.x86_64.conf pacman
 	if [ $? -ne 0 ]	; then
@@ -273,7 +279,7 @@ function testLoadX86Pkg {
 ##### Test: Loading a ARM package from public ################################
 function testLoadArmPkg {
 	STARTTIME=$(date +%s)
-	rm client.armv6h/var/cache/pacman/pkg/pacman-*-armv6h.pkg.tar.xz
+	rm client.armv6h/var/cache/pacman/pkg/pacman-*-armv6h.pkg.tar.xz  >/dev/null 2>&1
 	printf "*********** testLoadArmPkg start **********\n"
 	pacman -Sw $PACMAN_OPT --config $THISDIR/pacman.armv6h.conf pacman
 	if [ $? -ne 0 ]	; then
@@ -302,7 +308,7 @@ function testall {
 	$DOCK_COMP up -d --force-recreate --build
 	sleep 2
 	printf "Debug: curl\n";
-	curl -i $CURL_USER --data-binary @$THISDIR/$TESTPKGNAM $URL/test/upload/
+	curl -Li $CURL_USER --data-binary @$THISDIR/$TESTPKGNAM $URL/test/upload/
 	printf "Debug: logs\n";
 	$DOCK_COMP logs 
 	printf "Debug: down\n";
@@ -352,6 +358,10 @@ function testurl {
 	
 	# Setup Pacman Config
 	for arch in x86_64 armv6h; do
+		rm -rf \
+			$THISDIR/client.$arch/usr \
+			$THISDIR/client.$arch/var \
+			$THISDIR/client.$arch/archlinux*
 		makePacmanConf "$arch"
 		rc=$?
 		if [ $rc -ne 0 ] ; then return $rc; fi
@@ -391,7 +401,11 @@ export PACMAN_OPT="-dd --noconfirm"
 URL="http://localhost:8084"
 CURL_USER=""
 
-if [ "$1" == "--perllocal" ]; then
+# check syntax to avoid actions that will fail anyhow.
+LC_ALL=C perl -c $THISDIR/../upload.pl
+if [ $? -ne 0 ]; then
+	printf "Syntax Error in Perl. Aborting test.\n"
+elif [ "$1" == "--perllocal" ]; then
 	testperllocal
 elif [ "$1" == "--client" ]; then
 	testclient
