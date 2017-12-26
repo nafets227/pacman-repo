@@ -1,38 +1,11 @@
-FROM pritunl/archlinux
+FROM pritunl/archlinux:2017-12-16
 
 MAINTAINER Stefan Schallenberg aka nafets227 <infos@nafets.de>
 LABEL Description="Pacman repository (private and caching) in a container"
 
-RUN printf '\n\
-[options]\n\
-IgnorePkg=cryptsetup\n\
-IgnorePkg=device-mapper\n\
-IgnorePkg=cryptsetup\n\ 
-IgnorePkg=device-mapper\n\
-IgnorePkg=dhcpcd\n\
-IgnorePkg=iproute2\n\
-IgnorePkg=jfsutils\n\
-IgnorePkg=linux\n\
-IgnorePkg=lvm2\n\
-IgnorePkg=man-db\n\
-IgnorePkg=man-pages\n\ 
-IgnorePkg=mdadm\n\
-IgnorePkg=nano\n\
-IgnorePkg=netctl\n\
-IgnorePkg=openresolv\n\
-IgnorePkg=pciutils\n\
-IgnorePkg=pcmciautils, \
-IgnorePkg=reiserfsprogs\n\
-IgnorePkg=s-nail\n\
-IgnorePkg=systemd-sysvcompat\n\
-IgnorePkg=usbutils\n\
-IgnorePkg=vi\n\
-IgnorePkg=xfsprogs\n\
-' \
->> /etc/pacman.conf && pacman -Sy
-
 RUN \
     pacman -S --needed --noconfirm \
+        systemd \	
         nginx \
         perl \
         perl-fcgi && \
@@ -40,6 +13,8 @@ RUN \
 	rm -rf /usr/share/man/* && \
 	rm -rf /tmp/* && \
 	rm -rf /var/tmp/*
+
+RUN mount
 
 RUN \
     sed -e 's:bsdtar -xf :bsdtar --no-xattrs --no-fflags -xf :' \
