@@ -1,4 +1,4 @@
-FROM pritunl/archlinux:2017-12-16
+FROM pritunl/archlinux:2017-12-23
 
 MAINTAINER Stefan Schallenberg aka nafets227 <infos@nafets.de>
 LABEL Description="Pacman repository (private and caching) in a container"
@@ -7,7 +7,6 @@ RUN \
 	pacman -S --needed --noconfirm \
 		systemd \	
 		nginx \
-		perl \
 		perl-fcgi && \
 	paccache -r -k0 && \
 	rm -rf /usr/share/man/* && \
