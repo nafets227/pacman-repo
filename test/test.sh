@@ -402,10 +402,20 @@ URL="http://localhost:8084"
 CURL_USER=""
 
 # check syntax to avoid actions that will fail anyhow.
-LC_ALL=C perl -c $THISDIR/../upload.pl
-if [ $? -ne 0 ]; then
-	printf "Syntax Error in Perl. Aborting test.\n"
-elif [ "$1" == "--perllocal" ]; then
+perl -MFCGI -e ";" >/dev/null 2>&1
+if [ $? -eq 0 ] ; then
+        printf "Checking Perl Syntax of upload.pl\n"
+        LC_ALL=C perl -c $THISDIR/../upload.pl
+        if [ $? -ne 0 ] ; then
+                printf "Syntax Error in Perl. Aborting test.\n"
+                return 1
+        fi
+else
+        printf "Not Checking Perl Syntax (perl of Perl Module FCGI not installed).\n"
+fi
+
+# Now execute tests
+if [ "$1" == "--perllocal" ]; then
 	testperllocal
 elif [ "$1" == "--client" ]; then
 	testclient
