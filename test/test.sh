@@ -141,10 +141,6 @@ function makePacmanConf {
 		--import-ownertrust $CLIDIR/usr/share/pacman/keyrings/archlinux*-trusted
 	rc=$? ; if [ $rc -ne 0 ] ; then return $rc; fi
 
-	# Finally create the link in our test directory for backward compatibility		
-	rm pacman.$arch.conf 2>/dev/null
-	ln -s $PACMAN_CONF pacman.$arch.conf
-
 	printf "********** makePacmanConf $arch success ***********\n"
 	
 	return 0	
@@ -233,24 +229,27 @@ function testArmIndex {
 
 ##### Test: Loading Package of custom repo ####################################
 function testDownload {
+	local arch="${arch:-x86_64}"
+	local CLIDIR=$THISDIR/client.$arch
+
 	STARTTIME=$(date +%s)
-	printf "*********** testDownload start **********\n"
-	rm client.x86_64/var/cache/pacman/pkg/$TESTPKGNAM >/dev/null 2>&1
-	pacman -Sw $PACMAN_OPT --config $THISDIR/pacman.x86_64.conf binutils-efi
+	printf "*********** testDownload start ($arch) **********\n"
+	rm $CLIDIR/var/cache/pacman/pkg/$TESTPKGNAM >/dev/null 2>&1
+	pacman -Sw $PACMAN_OPT --config $CLIDIR/etc/pacman.conf binutils-efi
 	# This package does not exist in official repos, it was just uploaded
 	if [ $? -ne 0 ]	; then
 		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf "Error - pacman could not load package binutils-efi\n"
 		return 1
 	fi
-	if [ ! -f client.x86_64/var/cache/pacman/pkg/$TESTPKGNAM ] ; then
+	if [ ! -f $CLIDIR/var/cache/pacman/pkg/$TESTPKGNAM ] ; then
 		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - pacman did not write %s \n" \
-			"client.x86_64/var/cache/pacman/pkg/$TESTPKGNAM"
+			"$CLIDIR/var/cache/pacman/pkg/$TESTPKGNAM"
 		return 1
 	fi
 
-	printf "*********** testDownload success **********\n"
+	printf "*********** testDownload success ($arch) **********\n"
 	return 0
 }
 
@@ -446,6 +445,7 @@ function testSetUrl {
 		rc=$?
 		if [ $rc -ne 0 ] ; then return $rc; fi
 	done
+	unset arch
 
 	# Tests
 	testUpload && \
