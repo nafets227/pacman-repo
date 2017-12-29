@@ -442,11 +442,12 @@ if ( defined $pkgfile ) {
 	print "Bypassing FastCGI and trying to upload $pkgfile.\n";
 	if ( ! defined $root ) { $root = '/srv/archlinux'; }
 	uploadPkg($pkgfile, $root, "test");
+	exit $?
 }
 else {
 	main_fcgi();
+	exit 0
 }
 
-exit 0
 
 __END__
