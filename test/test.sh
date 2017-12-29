@@ -5,6 +5,10 @@
 # (C) Stefan Schallenberg
 #
 
+#-----------------------------------------------------------------------------
+#----- Utilities functions ---------------------------------------------------
+#-----------------------------------------------------------------------------
+
 ##############################################################################
 function getDir {
 	local THISDIR=$(dirname $BASH_SOURCE)
@@ -145,6 +149,12 @@ function makePacmanConf {
 	
 	return 0	
 }
+
+#-----------------------------------------------------------------------------
+#----- Test cases ------------------------------------------------------------
+#-----------------------------------------------------------------------------
+
+
 ##### Test: Uploading a package ##############################################
 function testUpload {
 	STARTTIME=$(date +%s)
@@ -156,24 +166,24 @@ function testUpload {
 	curl -Lfi $CURL_USER --data-binary @$TESTPKGNAM $URL/test/upload/
 	rc=$?
 	if [ $rc -ne 0 ] ; then
-		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - Upload failed with RC=%s\n" "$rc"
 		return 1
 	fi
 	if [ ! -z "$CONT_REPO" ] && ! cmp $CONT_REPO/archlinux/test/os/x86_64/$TESTPKGNAM $TESTPKGNAM ; then
-		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - Package File %s corrupt of missing after upload\n" \
 			"$CONT_REPO/archlinux/test/os/x86_64/$TESTPKGNAM"
 		return 1
 	fi
 	if [ ! -z "$CONT_REPO" ] &&  ! [ -f $CONT_REPO/archlinux/test/os/x86_64/test.db.tar.gz ] ; then
-		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - Repo Database %s missing after upload\n" \
 			"$CONT_REPO/archlinux/test/test.db.tar.gz"
 		return 1
 	fi
 	if [ ! -z "$CONT_REPO" ] && ! [ -L $CONT_REPO/archlinux/test/os/x86_64/test.db ] ; then
-		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - Repo Database %s missing after upload\n" \
 			"$CONT_REPO/archlinux/test/test.db"
 		return 1
@@ -189,12 +199,12 @@ function testX86Index {
 	printf "*********** testX86Index start **********\n"
 	pacman -Syy $PACMAN_OPT --config $THISDIR/pacman.x86_64.conf
 	if [ $? -ne 0 ]	; then
-		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf "Error - pacman could not load the repositories through proxy\n"
 		return 1
 	fi
 	if [ ! -f client.x86_64/var/lib/pacman/sync/core.db ] ; then
-		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - pacman did not write %s \n" \
 			"client.x86_64/var/lib/pacman/sync/core.db"
 		return 1
@@ -210,12 +220,12 @@ function testArmIndex {
 	printf "*********** testArmIndex start **********\n"
 	pacman -Syy --arch armv6h $PACMAN_OPT --config $THISDIR/pacman.armv6h.conf
 	if [ $? -ne 0 ]	; then
-		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf "Error - pacman could not load the repositories through proxy\n"
 		return 1
 	fi
 	if [ ! -f client.armv6h/var/lib/pacman/sync/core.db ] ; then
-		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - pacman did not write %s \n" \
 			"client.armv6h/var/lib/pacman/sync/core.db"
 		return 1
@@ -233,12 +243,12 @@ function testDownload {
 	pacman -Sw $PACMAN_OPT --config $THISDIR/pacman.x86_64.conf binutils-efi
 	# This package does not exist in official repos, it was just uploaded
 	if [ $? -ne 0 ]	; then
-		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf "Error - pacman could not load package binutils-efi\n"
 		return 1
 	fi
 	if [ ! -f client.x86_64/var/cache/pacman/pkg/$TESTPKGNAM ] ; then
-		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - pacman did not write %s \n" \
 			"client.x86_64/var/cache/pacman/pkg/$TESTPKGNAM"
 		return 1
@@ -255,18 +265,18 @@ function testLoadX86Pkg {
 	printf "*********** testLoadX86Pkg start **********\n"
 	pacman -Sw $PACMAN_OPT --config $THISDIR/pacman.x86_64.conf pacman
 	if [ $? -ne 0 ]	; then
-		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf "Error - pacman could not load package pacman\n"
 		return 1
 	fi
 	if [ ! -f client.x86_64/var/cache/pacman/pkg/pacman-*-x86_64.pkg.tar.xz ] ; then
-		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - pacman did not write %s \n" \
 			"client.x86_64/var/cache/pacman/pkg/pacman-*-x86_64.pkg.tar.xz"
 		return 1
 	fi
 	if [ ! -z "$COMP_CACHE" ] && [ ! -f $COMP_CACHE/core/os/x86_64/pacman-*-x86_64.pkg.tar.xz ] ; then
-		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - missing cache file %s \n" \
 			"$COMP_CACHE/core/os/x86_64/pacman-*-x86_64.pkg.tar.xz"
 		return 1
@@ -283,18 +293,18 @@ function testLoadArmPkg {
 	printf "*********** testLoadArmPkg start **********\n"
 	pacman -Sw $PACMAN_OPT --config $THISDIR/pacman.armv6h.conf pacman
 	if [ $? -ne 0 ]	; then
-		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf "Error - pacman could not load package pacman\n"
 		return 1
 	fi
 	if [ ! -f client.armv6h/var/cache/pacman/pkg/pacman-*-armv6h.pkg.tar.xz ] ; then
-		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - pacman did not write %s \n" \
 			"client.armv6h/var/cache/pacman/pkg/pacman-*-armv6h.pkg.tar.xz"
 		return 1
 	fi
 	if [ ! -z "$COMP_CACHE" ] && [ ! -f $COMP_CACHE/core/os/armv6h/pacman-*-armv6h.pkg.tar.xz ] ; then
-		docker logs --since=$STARTTIME pacmanrepo_pacman-repo_1
+		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - missing cache file %s \n" \
 			"$COMP_CACHE/core/os/armv6h/pacman-*-armv6h.pkg.tar.xz"
 		return 1
@@ -303,38 +313,114 @@ function testLoadArmPkg {
 	printf "*********** testLoadArmPkg success **********\n"
 	return 0
 }
+
 ##############################################################################
-function testall {
-	$DOCK_COMP up -d --force-recreate --build
-	sleep 2
-	printf "Debug: curl\n";
-	curl -Li $CURL_USER --data-binary @$THISDIR/$TESTPKGNAM $URL/test/upload/
-	printf "Debug: logs\n";
-	$DOCK_COMP logs 
-	printf "Debug: down\n";
-	$DOCK_COMP down 
+function testperllocal {
+	cp -a \
+		$THISDIR/binutils-efi-2.27-1.90-x86_64.pkg.tar.xz \
+		$THISDIR/testpkgtemp \
+		|| return 1
+	LC_ALL=C $THISDIR/../upload.pl $THISDIR/testpkgtemp
+	local rc=$?
+	test -f $THISDIR/testpkgtemp && rm $THISDIR/testpkgtemp
+	
+	return $rc
 }
 
 ##############################################################################
-function testclient {
-	# Startup
-	rm -rf $THISDIR/cache $THISDIR/repo >/dev/null
-	$DOCK_COMP up -d --force-recreate --build
-	sleep 2
-
-	testurl "http://localhost:8084" "" "$THISDIR/cache" "$THISDIR/repo"
-	rc=$?
-
-	# Shutdown
-	$DOCK_COMP down
-
-	if [ $rc -eq 0 ]; then
-	       printf "All Test succesfully passed.\n";
+function testperlsyntax {
+	perl -MFCGI -e ";" >/dev/null 2>&1
+	if [ $? -eq 0 ] ; then
+		printf "Checking Perl Syntax of upload.pl\n"
+		LC_ALL=C perl -c $THISDIR/../upload.pl
+		if [ $? -ne 0 ] ; then
+			printf "Syntax Error in Perl. Aborting test.\n"
+			return 1
+		fi
+	else
+		printf "Not Checking Perl Syntax (perl of Perl Module FCGI not installed).\n"
 	fi
 }
 
+#-----------------------------------------------------------------------------
+#----- Local Setup using docker-compose --------------------------------------
+#-----------------------------------------------------------------------------
+
+##### LocalSetup: Start Containers ###########################################
+function localsetup_start {
+	export RESOLVER="$(sed -n -e 's/nameserver \(.*\)/\1/p' </etc/resolv.conf)"
+	export NGINX_LOGLVL=""
+	docker-compose \
+		-f $THISDIR/docker-compose.yaml \
+		-p pacman-repo \
+		up \
+		-d \
+		--force-recreate \
+		--build
+	if [ $? -ne 0 ] ; then return 1 ; fi
+		
+	sleep 2
+	
+	return 0		
+}
+
+##### LocalSetup: Stop Containers ############################################
+function localsetup_end {
+	docker-compose \
+		-f $THISDIR/docker-compose.yaml \
+		-p pacman-repo \
+		down 
+}
+
+##### LocalSetup: print log ##################################################
+function localsetup_log {
+	if [ -z "$1" ] ; then
+		docker logs pacmanrepo_pacman-repo_1
+	else 
+		docker logs --since=$1 pacmanrepo_pacman-repo_1
+	fi
+}
+
+#-----------------------------------------------------------------------------
+#----- Test Sets -------------------------------------------------------------
+#-----------------------------------------------------------------------------
+
 ##############################################################################
-function testurl {
+function testSetSmall {
+	URL="http://localhost:8084"
+	
+	localsetup_start || return 1
+	printf "Debug: curl\n";
+	curl -Li $CURL_USER --data-binary @$THISDIR/$TESTPKGNAM $URL/test/upload/
+	printf "Debug: logs\n";
+	localsetup_log
+	printf "Debug: down\n";
+	localsetup_end 
+}
+
+##############################################################################
+function testSetLocal {
+	# Startup
+	rm -rf $THISDIR/cache $THISDIR/repo >/dev/null
+	
+	localsetup_start || return 1
+
+	testSetUrl \
+		"http://localhost:8084" \
+		"" \
+		"$THISDIR/cache" \
+		"$THISDIR/repo" \
+		"localsetup_log"
+	rc=$?
+
+	# Shutdown
+	localsetup_end
+
+	return $rc
+}
+
+##############################################################################
+function testSetUrl {
 	pushd $THISDIR >/dev/null
 
 	# Reading Parameters
@@ -342,6 +428,7 @@ function testurl {
 	CURL_USER="$2"
 	CONT_CACHE="$3"
 	CONT_REPO="$4"
+	CONT_LOG="$5"
 
 	printf  "Testing URL %s\n" "$URL"
        	if [ ! -z "$CURL_USER" ] ; then 
@@ -353,6 +440,9 @@ function testurl {
 	if [ ! -z "$CONT_REPO" ] ; then
 		printf "\tRepoDir : %s\n" "$CONT_REPO" 
 	else    printf "\tNo RepoDir\n"; fi
+	if [ ! -z "$CONT_LOG" ] ; then
+		printf "\tLog Command : %s\n" "$CONT_LOG" 
+	else    printf "\tNo Log Command\n"; fi
 
 	if [ ! -z "$CURL_USER" ] ; then CURL_USER="-u $CURL_USER"; fi
 	
@@ -382,46 +472,32 @@ function testurl {
 	return $rc
 }
 
-##############################################################################
-function testperllocal {
-	cp -a $THISDIR/binutils-efi-2.27-1.90-x86_64.pkg.tar.xz $THISDIR/testpkgtemp
-	$THISDIR/../upload.pl $THISDIR/testpkgtemp
-	test -f $THISDIR/testpkgtemp && rm $THISDIR/testpkgtemp
-}
 
-#### Main ####################################################################
+#-----------------------------------------------------------------------------
+#----- MAIN ------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 export THISDIR=$(getDir)
-export RESOLVER="$(sed -n -e 's/nameserver \(.*\)/\1/p' </etc/resolv.conf)"
-export NGINX_LOGLVL=""
-export DOCK_COMP="docker-compose -f $THISDIR/docker-compose.yaml -p pacman-repo"
 export TESTPKGNAM="binutils-efi-2.27-1.90-x86_64.pkg.tar.xz"
 export PACMAN_OPT="-dd --noconfirm" 
 
-# default values
-URL="http://localhost:8084"
-CURL_USER=""
-
 # check syntax to avoid actions that will fail anyhow.
-perl -MFCGI -e ";" >/dev/null 2>&1
-if [ $? -eq 0 ] ; then
-        printf "Checking Perl Syntax of upload.pl\n"
-        LC_ALL=C perl -c $THISDIR/../upload.pl
-        if [ $? -ne 0 ] ; then
-                printf "Syntax Error in Perl. Aborting test.\n"
-                return 1
-        fi
-else
-        printf "Not Checking Perl Syntax (perl of Perl Module FCGI not installed).\n"
-fi
+testperlsyntax || exit 1
 
 # Now execute tests
 if [ "$1" == "--perllocal" ]; then
 	testperllocal
-elif [ "$1" == "--client" ]; then
-	testclient
+	rc=$?
 elif [ "$1" == "--url" ]; then
 	shift
-	testurl $@ && printf "All Test succesfully passed.\n"
+	testSetUrl $@
+	rc=$?
 else
-	testall
+	testSetLocal
+	rc=$?
+fi
+
+if [ $rc -eq 0 ] ; then
+	printf "All Test succesfully passed.\n"
+else
+	printf "Error in Tests.\n"
 fi
