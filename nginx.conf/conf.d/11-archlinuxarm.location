@@ -20,7 +20,7 @@ location /archlinuxarm/ {
 		# available. If not available, retrieve and save the package from an 
 		# upstream mirror.
 		location ~ ^/archlinuxarm/.*\.tar\.xz$ {
-			root /srv/pacman-cache/archlinuxarm;
+			root /srv/pacman-cache;
 			autoindex on;
 			set $pkgtype "pkg";
 			try_files $uri @arm_mirror;
@@ -31,15 +31,16 @@ location /archlinuxarm/ {
 
 	# serve any locally uploaded files directly
 	location /archlinuxarm/ {
-		root /srv/pacman-repo/archlinuxarm;
+		root /srv/pacman-repo;
 		autoindex on;
   	}
   
 } # location /archlinuxarm
 
+
 # Retrieve package from upstream mirrors and cache for future requests
 location @arm_mirror {
-	root /srv/pacman-cache/archlinuxarm;
+	root /srv/pacman-cache;
 	proxy_store on;
 	proxy_redirect off;
 	proxy_store_access user:rw group:rw all:r;
@@ -48,7 +49,7 @@ location @arm_mirror {
 
 	proxy_intercept_errors on;
 	recursive_error_pages on;
-	error_page 301 302 307 = @handle_redirect;
+	error_page 301 302 307 = @handle_redirect_store;
 }
 
 location @arm_nocache {
