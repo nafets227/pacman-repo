@@ -447,7 +447,7 @@ function testSetUrl {
 	done
 	unset arch
 
-	# Tests
+	# Tests of compatibility setup
 	testUpload && \
 	testX86Index && \
 	testLoadX86Pkg && \
@@ -456,6 +456,39 @@ function testSetUrl {
 	testLoadArmPkg
 	rc=$?
 
+	if [ $rc -eq 0 ] ; then
+		for arch in x86_64 armv6h; do
+			local suburl
+			if [ "$arch" == "x86_64" ] ; then
+				suburl="archlinux"
+			elif [ "$arch" == "armv6h" ] ; then
+				suburl="archlinuxarm"
+			else
+				printf "Unknown Arch %s. Aborting\n" "$arch"
+				return 2
+			fi
+			local URL="$URL/$suburl"
+			local CONT_CACHE CONT_REPO
+			if  [ ! -z "$CONT_CACHE" ] ; then
+				local CONT_CACHE=$CONT_CACHE/$suburl
+			fi
+			if [ ! -z "$CONT_REPO" ] ; then
+				local CONT_REPO=$CONT_CACHE/$suburl
+			fi
+			
+#			testUpload && \
+#			testDownload && \
+			testIndex && \
+			testLoadPkg
+			rc=$?
+			
+			if [ $rc -ne 0 ] ; then
+				return $rc
+			fi
+			
+		done
+	fi
+		
 	# Shutdown
 	popd >/dev/null
 
