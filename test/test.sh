@@ -501,3 +501,5 @@ if [ $rc -eq 0 ] ; then
 else
 	printf "Error in Tests.\n"
 fi
+
+exit $rc
