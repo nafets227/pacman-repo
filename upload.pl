@@ -257,8 +257,14 @@ sub uploadPkg {
 	print "<h1>Recreating database</h1>\n";
 
 	my $output = qx(/usr/local/bin/repo-add $dest_dir/$repo.db.tar.gz $destfile 2>&1);
-	foreach my $line (split /[\r\n]+/, $output) {
-		print "$line<br>\n";
+	if ($? ne 0) {
+		print STDERR "Could not execure /usr/local/bin/repo-add. RC=$?\n";
+		print "Error recreating database\n";
+		return ERR;
+	} else { 
+		foreach my $line (split /[\r\n]+/, $output) {
+			print "$line<br>\n";
+		}
 	}
 	print "<hr>\n";
 
