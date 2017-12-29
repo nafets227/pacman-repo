@@ -194,46 +194,41 @@ function testUpload {
 	return 0
 }
 
-##### Test: Loading x86 Repository index #####################################
-function testX86Index {
+##### Test: Loading Repository index ($arch) #################################
+function testIndex {
+	local CLIDIR=$THISDIR/client.$arch
+	
 	STARTTIME=$(date +%s)
-	printf "*********** testX86Index start **********\n"
-	pacman -Syy $PACMAN_OPT --config $THISDIR/pacman.x86_64.conf
+	printf "*********** testIndex start ($arch) **********\n"
+	pacman -Syy $PACMAN_OPT --config $CLIDIR/etc/pacman.conf
 	if [ $? -ne 0 ]	; then
 		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf "Error - pacman could not load the repositories through proxy\n"
 		return 1
 	fi
-	if [ ! -f client.x86_64/var/lib/pacman/sync/core.db ] ; then
+	if [ ! -f $CLIDIR/var/lib/pacman/sync/core.db ] ; then
 		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - pacman did not write %s \n" \
-			"client.x86_64/var/lib/pacman/sync/core.db"
+			"$CLIDIR/var/lib/pacman/sync/core.db"
 		return 1
 	fi
 
-	printf "*********** testX86Index success **********\n"
+	printf "*********** testIndex success ($arch) **********\n"
 	return 0
+}
+
+##### Test: Loading x86 Repository index #####################################
+function testX86Index {
+	local arch="x86_64"
+	testIndex
+	return $?
 }
 
 ##### Test: Loading ARM Repository index #####################################
 function testArmIndex {
-	STARTTIME=$(date +%s)
-	printf "*********** testArmIndex start **********\n"
-	pacman -Syy --arch armv6h $PACMAN_OPT --config $THISDIR/pacman.armv6h.conf
-	if [ $? -ne 0 ]	; then
-		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
-		printf "Error - pacman could not load the repositories through proxy\n"
-		return 1
-	fi
-	if [ ! -f client.armv6h/var/lib/pacman/sync/core.db ] ; then
-		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
-		printf  "Error - pacman did not write %s \n" \
-			"client.armv6h/var/lib/pacman/sync/core.db"
-		return 1
-	fi
-
-	printf "*********** testArmIndex success **********\n"
-	return 0
+	local arch="armv6h"
+	testIndex
+	return $?
 }
 
 ##### Test: Loading Package of custom repo ####################################
