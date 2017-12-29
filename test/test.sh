@@ -254,60 +254,54 @@ function testDownload {
 	return 0
 }
 
-##### Test: Loading a X86 package from public ################################
-function testLoadX86Pkg {
+##### Test: Loading a package from public ($arch) ############################
+function testLoadPkg {
+	local CLIDIR=$THISDIR/client.$arch
+	
+	printf "*********** testLoadPkg start ($arch) **********\n"
 	STARTTIME=$(date +%s)
-	rm client.x86_64/var/cache/pacman/pkg/pacman-*-x86_64.pkg.tar.xz >/dev/null 2>&1
-	printf "*********** testLoadX86Pkg start **********\n"
-	pacman -Sw $PACMAN_OPT --config $THISDIR/pacman.x86_64.conf pacman
+	rm $CLIDIR/var/cache/pacman/pkg/pacman-*-$arch.pkg.tar.xz >/dev/null 2>&1
+	pacman -Sw $PACMAN_OPT --config $CLIDIR/etc/pacman.conf pacman
 	if [ $? -ne 0 ]	; then
 		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf "Error - pacman could not load package pacman\n"
 		return 1
 	fi
-	if [ ! -f client.x86_64/var/cache/pacman/pkg/pacman-*-x86_64.pkg.tar.xz ] ; then
+	if [ ! -f $CLIDIR/var/cache/pacman/pkg/pacman-*-$arch.pkg.tar.xz ] ; then
 		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - pacman did not write %s \n" \
-			"client.x86_64/var/cache/pacman/pkg/pacman-*-x86_64.pkg.tar.xz"
+			"$CLIDIR/var/cache/pacman/pkg/pacman-*-$arch.pkg.tar.xz"
 		return 1
 	fi
-	if [ ! -z "$COMP_CACHE" ] && [ ! -f $COMP_CACHE/core/os/x86_64/pacman-*-x86_64.pkg.tar.xz ] ; then
+	if [ ! -z "$COMP_CACHE" ] && [ ! -f $CONT_CACHE/core/os/$arch/pacman-*-$arch.pkg.tar.xz ] ; then
 		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - missing cache file %s \n" \
-			"$COMP_CACHE/core/os/x86_64/pacman-*-x86_64.pkg.tar.xz"
+			"$CONT_CACHE/core/os/$arch/pacman-*-$arch.pkg.tar.xz"
 		return 1
 	fi
 
-	printf "*********** testLoadX86Pkg success **********\n"
+	printf "*********** testLoadPkg success ($arch) **********\n"
 	return 0
+}
+
+##### Test: Loading a X86 package from public ################################
+function testLoadX86Pkg {
+	local arch="x86_64"
+	if  [ ! -z "$CONT_CACHE" ] ; then
+		local CONT_CACHE=$CONT_CACHE/archlinux
+	fi
+	testLoadPkg
+	return $?
 }
 
 ##### Test: Loading a ARM package from public ################################
 function testLoadArmPkg {
-	STARTTIME=$(date +%s)
-	rm client.armv6h/var/cache/pacman/pkg/pacman-*-armv6h.pkg.tar.xz  >/dev/null 2>&1
-	printf "*********** testLoadArmPkg start **********\n"
-	pacman -Sw $PACMAN_OPT --config $THISDIR/pacman.armv6h.conf pacman
-	if [ $? -ne 0 ]	; then
-		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
-		printf "Error - pacman could not load package pacman\n"
-		return 1
+	local arch="armv6h"
+	if  [ ! -z "$CONT_CACHE" ] ; then
+		local CONT_CACHE=$CONT_CACHE/archlinuxarm
 	fi
-	if [ ! -f client.armv6h/var/cache/pacman/pkg/pacman-*-armv6h.pkg.tar.xz ] ; then
-		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
-		printf  "Error - pacman did not write %s \n" \
-			"client.armv6h/var/cache/pacman/pkg/pacman-*-armv6h.pkg.tar.xz"
-		return 1
-	fi
-	if [ ! -z "$COMP_CACHE" ] && [ ! -f $COMP_CACHE/core/os/armv6h/pacman-*-armv6h.pkg.tar.xz ] ; then
-		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
-		printf  "Error - missing cache file %s \n" \
-			"$COMP_CACHE/core/os/armv6h/pacman-*-armv6h.pkg.tar.xz"
-		return 1
-	fi
-
-	printf "*********** testLoadArmPkg success **********\n"
-	return 0
+	testLoadPkg
+	return $?
 }
 
 ##############################################################################
