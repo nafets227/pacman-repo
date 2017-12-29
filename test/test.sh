@@ -273,7 +273,7 @@ function testLoadPkg {
 			"$CLIDIR/var/cache/pacman/pkg/pacman-*-$arch.pkg.tar.xz"
 		return 1
 	fi
-	if [ ! -z "$COMP_CACHE" ] && [ ! -f $CONT_CACHE/core/os/$arch/pacman-*-$arch.pkg.tar.xz ] ; then
+	if [ ! -z "$CONT_CACHE" ] && [ ! -f $CONT_CACHE/core/os/$arch/pacman-*-$arch.pkg.tar.xz ] ; then
 		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - missing cache file %s \n" \
 			"$CONT_CACHE/core/os/$arch/pacman-*-$arch.pkg.tar.xz"
