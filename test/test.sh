@@ -160,7 +160,7 @@ function testUpload {
 	STARTTIME=$(date +%s)
 	printf "*********** testUpload start **********\n"
 	if [ ! -z "$CONT_REPO" ] && \
-	   [ -f $CONT_REPO/archlinux/test/os/x86_64/$TESTPKGNAM $TESTPKGNAM ; then
+	   [ -f $CONT_REPO/archlinux/test/os/x86_64/$TESTPKGNAM ] ; then
 		printf "Error - Package File %s exists before RUN\n" "repo/test/$TESTPKGNAM"
 		return 1
 	fi
