@@ -159,7 +159,8 @@ function makePacmanConf {
 function testUpload {
 	STARTTIME=$(date +%s)
 	printf "*********** testUpload start **********\n"
-	if [ -f repo/test/$TESTPKGNAM ]; then
+	if [ ! -z "$CONT_REPO" ] && \
+	   [ -f $CONT_REPO/archlinux/test/os/x86_64/$TESTPKGNAM $TESTPKGNAM ; then
 		printf "Error - Package File %s exists before RUN\n" "repo/test/$TESTPKGNAM"
 		return 1
 	fi
