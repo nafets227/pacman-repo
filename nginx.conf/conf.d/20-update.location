@@ -2,7 +2,7 @@
 # Forward any updates to localhost:5000 (where our FastCGI Server is 
 # expected to listen) and receive full file before
 # You may want add authentication to /archlinux.upload on a reverse proxy before this
-location ~ /archlinux.upload/(?<repo>[^/]+)/?$ {
+location ~ ^/archlinux.upload/(?<repo>[^/]+)/?$ {
 	client_body_temp_path /srv/pacman-repo/archlinux.upload/;
 	client_body_in_file_only on;
 	client_body_buffer_size 128K;
@@ -18,7 +18,7 @@ location ~ /archlinux.upload/(?<repo>[^/]+)/?$ {
 	fastcgi_pass unix:/run/upload.sock;
 }
 
-location ~ /archlinuxarm.upload/(?<repo>[^/]+)/?$ {
+location ~ ^/archlinuxarm.upload/(?<repo>[^/]+)/?$ {
 	client_body_temp_path /srv/pacman-repo/archlinuxarm.upload/;
 	client_body_in_file_only on;
 	client_body_buffer_size 128K;
