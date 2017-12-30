@@ -44,7 +44,7 @@ location ~ ^/(?<repo>[^/]+)/upload/?$ {
 	rewrite .* /archlinux.upload/$repo/ ;
 }
 
-location ~ ^/(?<repo>[^/]+)/os/(?<urlpath>.*)$ {
+location ~ ^/(?<repo>[^/]+)/os/(?<urlpath>x86_64.*)$ {
 	absolute_redirect off;
 	rewrite .* /archlinux/$repo/os/$urlpath permanent;
 	}

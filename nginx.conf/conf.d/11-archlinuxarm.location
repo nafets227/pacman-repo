@@ -37,6 +37,13 @@ location /archlinuxarm/ {
   
 } # location /archlinuxarm
 
+# for compatibility redirect uploads  
+location ~ ^/(?<repo>[^/]+)/os/(?<urlpath>armv6h.*)$ {
+	absolute_redirect off;
+	rewrite .* /archlinuxarm/$repo/os/$urlpath permanent;
+	}
+
+
 
 # Retrieve package from upstream mirrors and cache for future requests
 location @arm_mirror {
