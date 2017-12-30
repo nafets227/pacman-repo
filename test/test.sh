@@ -21,7 +21,7 @@ function makePacmanConf {
 	local rc=0
 	local PACMAN_CONF=$CLIDIR/etc/pacman.conf
 
-	printf "********** makePacmanConf $arch start ***********\n"
+	printf "********** makePacmanConf $CLI_TYPE start ***********\n"
 
 	mkdir -p \
 		$CLIDIR/var/lib/pacman       \
@@ -60,7 +60,7 @@ function makePacmanConf {
 	# only available on that architecture and any other architecture
 	# would create errors when trying to load the database that will
 	# not be initialised because no upload is executed.
-	if [ $arch == "x86_64" ] ; then
+	if [ $CLI_TYPE == "x86_64" ] ; then
 		cat >>$PACMAN_CONF <<-EOF
 		[core]
 		Server = $URL/\$repo/os/\$arch
@@ -71,7 +71,7 @@ function makePacmanConf {
 		Server = $URL/\$repo/os/\$arch
 		EOF
 		PKGURL="https://www.archlinux.org/packages/core/any/archlinux-keyring/download"
-	elif [ $arch == "armv6h" ] ; then
+	elif [ $CLI_TYPE == "armv6h" ] ; then
 		cat >>$PACMAN_CONF <<-EOF
 		[core]
 		Server = $URL/archlinuxarm/\$repo/os/\$arch
@@ -84,7 +84,7 @@ function makePacmanConf {
 		EOF
 		PKGURL="http://mirror.archlinuxarm.org/armv6h/core/archlinuxarm-keyring-20140119-1-any.pkg.tar.xz"
 	else
-		printf "ERROR: Unsupported architecture %s.\n" "$arch"
+		printf "ERROR: Unsupported architecture %s.\n" "$CLI_TYPE"
 		return 1
 	fi
 
@@ -92,11 +92,11 @@ function makePacmanConf {
 	# Creating new keyrings would take a long time...
 	# in other words: reuse existing local key if present
 	if [ ! -e $CLIDIR/etc/pacman.d/gnupg/pubring.gpg ] ; then
-		printf "********** makePacmanConf $arch GPG Init ***********\n"
+		printf "********** makePacmanConf $CLI_TYPE GPG Init ***********\n"
 		pacman-key --config $PACMAN_CONF --init
 		rc=$? ; if [ $rc -ne 0 ] ; then return $rc; fi
 	else
-		printf "********** makePacmanConf $arch GPG reuse ***********\n"
+		printf "********** makePacmanConf $CLI_TYPE GPG reuse ***********\n"
 	fi
 
 	#download package by hand because GPG keyring is not yet setup!
@@ -139,7 +139,7 @@ function makePacmanConf {
 		--import-ownertrust $CLIDIR/usr/share/pacman/keyrings/archlinux*-trusted
 	rc=$? ; if [ $rc -ne 0 ] ; then return $rc; fi
 
-	printf "********** makePacmanConf $arch success ***********\n"
+	printf "********** makePacmanConf $CLI_TYPE success ***********\n"
 	
 	return 0	
 }
@@ -153,7 +153,7 @@ function makePacmanConf {
 function testUpload {
 	STARTTIME=$(date +%s)
 	URL_UPLOAD="${1:-$URL/test/upload/}"
-	printf "*********** testUpload start ($arch $URL_UPLOAD) **********\n"
+	printf "*********** testUpload start ($CLI_TYPE $URL_UPLOAD) **********\n"
 	if [ ! -z "$CONT_REPO" ] ; then
 		local CONT_REPO="$CONT_REPO/archlinux"
 	fi
@@ -188,14 +188,14 @@ function testUpload {
 		return 1
 	fi
 
-	printf "*********** testUpload success ($arch $URL_UPLOAD) **********\n"
+	printf "*********** testUpload success ($CLI_TYPE $URL_UPLOAD) **********\n"
 	return 0
 }
 
-##### Test: Loading Repository index ($arch) #################################
+##### Test: Loading Repository index ($CLI_TYPE) #################################
 function testIndex {
 	STARTTIME=$(date +%s)
-	printf "*********** testIndex start ($arch) **********\n"
+	printf "*********** testIndex start ($CLI_TYPE) **********\n"
 	pacman -Syy $PACMAN_OPT --config $CLIDIR/etc/pacman.conf
 	if [ $? -ne 0 ]	; then
 		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
@@ -209,7 +209,7 @@ function testIndex {
 		return 1
 	fi
 
-	printf "*********** testIndex success ($arch) **********\n"
+	printf "*********** testIndex success ($CLI_TYPE) **********\n"
 	return 0
 }
 
@@ -230,7 +230,7 @@ function testArmIndex {
 ##### Test: Loading Package of custom repo ####################################
 function testDownload {
 	STARTTIME=$(date +%s)
-	printf "*********** testDownload start ($arch) **********\n"
+	printf "*********** testDownload start ($CLI_TYPE) **********\n"
 	rm $CLIDIR/var/cache/pacman/pkg/$TESTPKGNAM >/dev/null 2>&1
 	pacman -Sw $PACMAN_OPT --config $CLIDIR/etc/pacman.conf binutils-efi
 	# This package does not exist in official repos, it was just uploaded
@@ -246,13 +246,13 @@ function testDownload {
 		return 1
 	fi
 
-	printf "*********** testDownload success ($arch) **********\n"
+	printf "*********** testDownload success ($CLI_TYPE) **********\n"
 	return 0
 }
 
-##### Test: Loading a package from public ($arch) ############################
+##### Test: Loading a package from public ($CLI_TYPE) ############################
 function testLoadPkg {
-	printf "*********** testLoadPkg start ($arch) **********\n"
+	printf "*********** testLoadPkg start ($CLI_TYPE) **********\n"
 	STARTTIME=$(date +%s)
 	rm $CLIDIR/var/cache/pacman/pkg/pacman-*-$arch.pkg.tar.xz >/dev/null 2>&1
 	pacman -Sw $PACMAN_OPT --config $CLIDIR/etc/pacman.conf pacman
@@ -274,7 +274,7 @@ function testLoadPkg {
 		return 1
 	fi
 
-	printf "*********** testLoadPkg success ($arch) **********\n"
+	printf "*********** testLoadPkg success ($CLI_TYPE) **********\n"
 	return 0
 }
 
@@ -431,13 +431,14 @@ function testSetUrl {
 	if [ ! -z "$CURL_USER" ] ; then CURL_USER="-u $CURL_USER"; fi
 	
 	# Setup Pacman Config
-	for arch in x86_64 armv6h; do
-		CLIDIR=$THISDIR/client.$arch
+	for CLI_TYPE in x86_64 armv6h; do
+		CLIDIR=$THISDIR/client.$CLI_TYPE
+		arch=$CLI_TYPE
 		rm -rf \
 			$CLIDIR/usr \
 			$CLIDIR/var \
 			$CLIDIR/archlinux*
-		makePacmanConf "$arch"
+		makePacmanConf "$CLI_TYPE"
 		rc=$?
 		if [ $rc -ne 0 ] ; then return $rc; fi
 	done
@@ -455,15 +456,16 @@ function testSetUrl {
 	rc=$?
 
 	if [ $rc -eq 0 ] ; then
-		for arch in x86_64 armv6h; do
-			CLIDIR=$THISDIR/client.$arch
+		for CLI_TYPE in x86_64 armv6h; do
+			CLIDIR=$THISDIR/client.$CLI_TYPE
+			arch=$CLI_TYPE
 			local suburl
-			if [ "$arch" == "x86_64" ] ; then
+			if [ "$CLI_TYPE" == "x86_64" ] ; then
 				suburl="archlinux"
-			elif [ "$arch" == "armv6h" ] ; then
+			elif [ "$CLI_TYPE" == "armv6h" ] ; then
 				suburl="archlinuxarm"
 			else
-				printf "Unknown Arch %s. Aborting\n" "$arch"
+				printf "Unknown CLI_TYPE %s. Aborting\n" "$CLI_TYPE"
 				return 2
 			fi
 			local URL="$URL/$suburl"
