@@ -152,39 +152,43 @@ function makePacmanConf {
 ##### Test: Uploading a package ##############################################
 function testUpload {
 	STARTTIME=$(date +%s)
-	printf "*********** testUpload start **********\n"
+	URL_UPLOAD="${1:-$URL/test/upload/}"
+	printf "*********** testUpload start ($arch $URL_UPLOAD) **********\n"
+	if [ ! -z "$CONT_REPO" ] ; then
+		local CONT_REPO="$CONT_REPO/archlinux"
+	fi
 	if [ ! -z "$CONT_REPO" ] && \
-	   [ -f $CONT_REPO/archlinux/test/os/x86_64/$TESTPKGNAM ] ; then
-		printf "Error - Package File %s exists before RUN\n" "repo/test/$TESTPKGNAM"
+	   [ -f $CONT_REPO/test/os/x86_64/$TESTPKGNAM ] ; then
+		printf "Error - Package File %s exists before RUN\n" "$CONT_REPO/test/os/x86_64/$TESTPKGNAM"
 		return 1
 	fi
-	curl -Lfi $CURL_USER --data-binary @$TESTPKGNAM $URL/test/upload/
+	curl -Lfi $CURL_USER --data-binary @$TESTPKGNAM $URL_UPLOAD
 	rc=$?
 	if [ $rc -ne 0 ] ; then
 		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
-		printf  "Error - Upload failed with RC=%s\n" "$rc"
+		printf  "Error - Upload to %s failed with RC=%s\n" "$URL_UPLOAD" "$rc"
 		return 1
 	fi
-	if [ ! -z "$CONT_REPO" ] && ! cmp $CONT_REPO/archlinux/test/os/x86_64/$TESTPKGNAM $TESTPKGNAM ; then
+	if [ ! -z "$CONT_REPO" ] && ! cmp "$CONT_REPO/test/os/x86_64/$TESTPKGNAM" "$TESTPKGNAM" ; then
 		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - Package File %s corrupt of missing after upload\n" \
-			"$CONT_REPO/archlinux/test/os/x86_64/$TESTPKGNAM"
+			"$CONT_REPO/test/os/x86_64/$TESTPKGNAM"
 		return 1
 	fi
-	if [ ! -z "$CONT_REPO" ] &&  ! [ -f $CONT_REPO/archlinux/test/os/x86_64/test.db.tar.gz ] ; then
+	if [ ! -z "$CONT_REPO" ] &&  ! [ -f $CONT_REPO/test/os/x86_64/test.db.tar.gz ] ; then
 		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - Repo Database %s missing after upload\n" \
-			"$CONT_REPO/archlinux/test/test.db.tar.gz"
+			"$CONT_REPO/test/os/x86_64/test.db.tar.gz"
 		return 1
 	fi
-	if [ ! -z "$CONT_REPO" ] && ! [ -L $CONT_REPO/archlinux/test/os/x86_64/test.db ] ; then
+	if [ ! -z "$CONT_REPO" ] && ! [ -L $CONT_REPO/test/os/x86_64/test.db ] ; then
 		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - Repo Database %s missing after upload\n" \
-			"$CONT_REPO/archlinux/test/test.db"
+			"$CONT_REPO/test/os/x86_64/test.db"
 		return 1
 	fi
 
-	printf "*********** testUpload success **********\n"
+	printf "*********** testUpload success ($arch $URL_UPLOAD) **********\n"
 	return 0
 }
 
