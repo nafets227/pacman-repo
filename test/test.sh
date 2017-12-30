@@ -47,12 +47,12 @@ function makePacmanConf {
 		#GPGDir      = /etc/pacman.d/gnupg/
 		#HookDir     = /etc/pacman.d/hooks/
 
-		RootDir      = $THISDIR/client.$arch
-		DBPath       = $THISDIR/client.$arch/var/lib/pacman/
-		CacheDir     = $THISDIR/client.$arch/var/cache/pacman/pkg/
-		LogFile      = $THISDIR/client.$arch/var/log/pacman.log
-		GPGDir       = $THISDIR/client.$arch/etc/pacman.d/gnupg/
-		HookDir      = $THISDIR/client.$arch/etc/pacman.d/hooks/
+		RootDir      = $CLIDIR/
+		DBPath       = $CLIDIR/var/lib/pacman/
+		CacheDir     = $CLIDIR/var/cache/pacman/pkg/
+		LogFile      = $CLIDIR/var/log/pacman.log
+		GPGDir       = $CLIDIR/etc/pacman.d/gnupg/
+		HookDir      = $CLIDIR/etc/pacman.d/hooks/
 
 		EOF
 
