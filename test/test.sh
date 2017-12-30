@@ -18,7 +18,6 @@ function getDir {
 
 ##############################################################################
 function makePacmanConf {
-	local arch=${1-"x86_64"}
 	local rc=0
 	local PACMAN_CONF=$CLIDIR/etc/pacman.conf
 
@@ -226,8 +225,6 @@ function testArmIndex {
 
 ##### Test: Loading Package of custom repo ####################################
 function testDownload {
-	local arch="${arch:-x86_64}"
-
 	STARTTIME=$(date +%s)
 	printf "*********** testDownload start ($arch) **********\n"
 	rm $CLIDIR/var/cache/pacman/pkg/$TESTPKGNAM >/dev/null 2>&1
@@ -444,6 +441,7 @@ function testSetUrl {
 
 	# Tests of compatibility setup
 	CLIDIR=$THISDIR/client.x86_64
+	arch=x86_64
 	testUpload && \
 	testX86Index && \
 	testLoadX86Pkg && \
