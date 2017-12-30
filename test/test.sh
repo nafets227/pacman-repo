@@ -496,6 +496,7 @@ function testSetUrl {
 }
 
 
+
 #-----------------------------------------------------------------------------
 #----- MAIN ------------------------------------------------------------------
 #-----------------------------------------------------------------------------
@@ -507,10 +508,10 @@ export PACMAN_OPT="-dd --noconfirm"
 testperlsyntax || exit 1
 
 # Now execute tests
-if [ "$1" == "--perllocal" ]; then
+if [ "$1" == "--perllocal" ] ; then
 	testperllocal
 	rc=$?
-elif [ "$1" == "--url" ]; then
+elif [ "$1" == "--url" ] ; then
 	shift
 	testSetUrl $@
 	rc=$?
