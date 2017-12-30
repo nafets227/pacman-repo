@@ -27,5 +27,13 @@ http {
 
 	resolver ${RESOLVER} ipv6=off;
 
-	include /etc/nginx/conf.d/*.conf;
+	server {
+		listen 80;
+		server_name localhost;
+	
+		set $pkgtype "unknown";
+	
+		include /etc/nginx/conf.d/*.location;
+	}
+	
 }
