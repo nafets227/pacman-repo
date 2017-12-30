@@ -8,10 +8,17 @@
 # Environment variables recognized:
 test -z "$NGINX_LOGLVL" && NGINX_LOGLVL="warn"
 test -z "$RESOLVER" && RESOLVER="127.0.0.1" 
+test -z "$COMPAT" && COMPAT="0" 
+
+if [ "$COMPAT" != "1" ] && [ "$COMPAT" != "0" ] ; then
+	printf "Invalid value of COMPAT Environment variable: \"%s\"\n" "$COMPAT"
+	exit 1
+fi
 
 printf "starting pacman-repo container.\n"
 printf "\tNGINX_LOGLVL=%s\n" "$NGINX_LOGLVL"
 printf "\tRESOLVER=%s\n" "$RESOLVER"
+printf "\tCOMPAT=%s\n" "$COMPAT"
 
 # Prepare directories and their access rights
 test -d /srv/pacman-cache || mkdir -p /srv/pacman-cache
@@ -24,6 +31,7 @@ chown http:http /srv/pacman-cache /srv/pacman-repo
 sed \
 	-e "s/\${NGINX_LOGLVL}/$NGINX_LOGLVL/" \
 	-e "s/\${RESOLVER}/$RESOLVER/" \
+	-e "s/\${COMPAT}/$COMPAT/" \
 	</etc/nginx/nginx.conf.template \
 	>/etc/nginx/nginx.conf 
 

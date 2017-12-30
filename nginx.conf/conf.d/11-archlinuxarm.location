@@ -39,6 +39,7 @@ location /archlinuxarm/ {
 
 # for compatibility redirect uploads  
 location ~ ^/(?<repo>[^/]+)/os/(?<urlpath>armv6h.*)$ {
+	if ( $COMPAT = "0" ) { return 404; }
 	absolute_redirect off;
 	rewrite .* /archlinuxarm/$repo/os/$urlpath permanent;
 	}

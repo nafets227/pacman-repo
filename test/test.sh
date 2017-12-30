@@ -353,7 +353,7 @@ function testSetLocal {
 	# Startup
 	rm -rf $THISDIR/cache $THISDIR/repo >/dev/null
 	
-	for COMPAT in 1 ; do
+	for COMPAT in 0 1 ; do
 		localsetup_start "$COMPAT" || return 1
 
 		testSetUrl \
@@ -387,18 +387,39 @@ function testSetUrlCompatDisabled {
 	printf "\tClientDir: %s\n" "$CLIDIR"
 	printf "\tArch: %s\n" "$arch"
 
+	printf "*********** testSetUrlCompatDisabled start ($CLI_TYPE) **********\n"
+
 	#
     # Now start the real tests
     #
-	#testUpload "$URL/test/upload"
-	#rc=$?; if [ $rc -ne 0 ] ; then return $rc; fi
+    
+    # Test Upload
+	http_code=$(curl -Lfi -w "%{http_code}" --data-binary @$TESTPKGNAM $URL/test/upload)
+	rc=$?
+	if [ "$rc" -ne 22 ] || [ $http_code != "404" ] ; then
+		printf "Error - upload RC=%s (exp=22), HTTP %s (exp=404)\n" \
+			"$rc" "$http_code"
+		return 1
+	fi
 
-	#testIndex
-	#rc=$?; if [ $rc -ne 0 ] ; then return $rc; fi
+    # Test Loading Index
+	pacman -Syy $PACMAN_OPT --config $CLIDIR/etc/pacman.conf
+	rc=$?
+	if [ $rc -ne 1 ] ; then
+		printf "Error - Pacman Reading Index RC=%s (exp=1)\n" \
+			"$rc"
+		return 1
+	fi
 
-	#testLoadPkg
-	#rc=$?; if [ $rc -ne 0 ] ; then return $rc; fi
-		
+	# testLoading a Pkg
+	pacman -Sw $PACMAN_OPT --config $CLIDIR/etc/pacman.conf pacman
+	if [ $rc -ne 1 ] ; then
+		printf "Error - Pacman Loading package RC=%s (exp=1)\n" \
+			"$rc"
+		return 1
+	fi
+			
+	printf "*********** testSetUrlCompatDisabled success ($CLI_TYPE) **********\n"
 	return 0
 }
 
@@ -554,6 +575,7 @@ function testSetUrl {
 		     [ "$CLI_TYPE" == "compat-armv6h" ] ) &&
 		   [ "$COMPAT" == "0" ] ; then
 			testSetUrlCompatDisabled
+			rc=$?;
 		else 
 			testSetUrlOneArch
 			rc=$?;

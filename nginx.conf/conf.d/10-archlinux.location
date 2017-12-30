@@ -40,11 +40,13 @@ location /archlinux/ {
 location ~ ^/(?<repo>[^/]+)/upload/?$ {
 	client_body_buffer_size 128K;
 	client_max_body_size 1000M;
+	if ( $COMPAT = "0" ) { return 404; }
 	absolute_redirect off;
 	rewrite .* /archlinux.upload/$repo/ ;
 }
 
 location ~ ^/(?<repo>[^/]+)/os/(?<urlpath>x86_64.*)$ {
+	if ( $COMPAT = "0" ) { return 404; }
 	absolute_redirect off;
 	rewrite .* /archlinux/$repo/os/$urlpath permanent;
 	}
