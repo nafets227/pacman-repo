@@ -156,7 +156,7 @@ function testUpload {
 	curl -Lfi $CURL_USER --data-binary @$TESTPKGNAM $URL_UPLOAD
 	rc=$?
 	if [ $rc -ne 0 ] ; then
-		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
+		test -z "$CONT_LOG" || $CONT_LOG # $STARTTIME
 		printf  "Error - Upload to %s failed with RC=%s\n" "$URL_UPLOAD" "$rc"
 		return 1
 	fi
@@ -289,6 +289,10 @@ function testperlsyntax {
 
 ##### LocalSetup: Start Containers ###########################################
 function localsetup_start {
+	if [ ! -z "$1T" ] ; then
+		export COMPAT="$1"
+	fi
+	
 	export RESOLVER="$(sed -n -e 's/nameserver \(.*\)/\1/p' </etc/resolv.conf)"
 	export NGINX_LOGLVL=""
 	docker-compose \
@@ -344,18 +348,23 @@ function testSetLocal {
 	# Startup
 	rm -rf $THISDIR/cache $THISDIR/repo >/dev/null
 	
-	localsetup_start || return 1
+	for COMPAT in 1 ; do
+		localsetup_start "$COMPAT" || return 1
 
-	testSetUrl \
-		"http://localhost:8084" \
-		"" \
-		"$THISDIR/cache" \
-		"$THISDIR/repo" \
-		"localsetup_log"
-	rc=$?
-
-	# Shutdown
-	localsetup_end
+		testSetUrl \
+			"http://localhost:8084" \
+			"$COMPAT" \
+			"" \
+			"$THISDIR/cache" \
+			"$THISDIR/repo" \
+			"localsetup_log"
+		rc=$?
+		
+		# Shutdown
+		localsetup_end
+		
+		if [ $rc -ne 0 ] ; then break; fi
+	done
 
 	return $rc
 }
@@ -435,10 +444,11 @@ function testSetUrl {
 
 	# Reading Parameters
 	BASE_URL="$1"
-	BASE_CURL_USER="$2"
-	BASE_CONT_CACHE="$3"
-	BASE_CONT_REPO="$4"
-	BASE_CONT_LOG="$5"
+	BASE_COMPAT="$2"
+	BASE_CURL_USER="$3"
+	BASE_CONT_CACHE="$4"
+	BASE_CONT_REPO="$5"
+	BASE_CONT_LOG="$6"
 
 	for CLI_TYPE in compat-x86_64 compat-armv6h  x86_64 armv6h; do
 		CLIDIR=$THISDIR/client.$CLI_TYPE

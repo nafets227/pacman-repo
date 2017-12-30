@@ -19,3 +19,4 @@ services:
     environment:
         - RESOLVER=${RESOLVER}
         - NGINX_LOGLVL=${NGINX_LOGLVL}
+        - COMPAT=${COMPAT}
