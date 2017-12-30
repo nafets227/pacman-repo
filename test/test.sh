@@ -20,7 +20,6 @@ function getDir {
 function makePacmanConf {
 	local arch=${1-"x86_64"}
 	local rc=0
-	local CLIDIR=$THISDIR/client.$arch
 	local PACMAN_CONF=$CLIDIR/etc/pacman.conf
 
 	printf "********** makePacmanConf $arch start ***********\n"
@@ -192,8 +191,6 @@ function testUpload {
 
 ##### Test: Loading Repository index ($arch) #################################
 function testIndex {
-	local CLIDIR=$THISDIR/client.$arch
-	
 	STARTTIME=$(date +%s)
 	printf "*********** testIndex start ($arch) **********\n"
 	pacman -Syy $PACMAN_OPT --config $CLIDIR/etc/pacman.conf
@@ -230,7 +227,6 @@ function testArmIndex {
 ##### Test: Loading Package of custom repo ####################################
 function testDownload {
 	local arch="${arch:-x86_64}"
-	local CLIDIR=$THISDIR/client.$arch
 
 	STARTTIME=$(date +%s)
 	printf "*********** testDownload start ($arch) **********\n"
@@ -255,8 +251,6 @@ function testDownload {
 
 ##### Test: Loading a package from public ($arch) ############################
 function testLoadPkg {
-	local CLIDIR=$THISDIR/client.$arch
-	
 	printf "*********** testLoadPkg start ($arch) **********\n"
 	STARTTIME=$(date +%s)
 	rm $CLIDIR/var/cache/pacman/pkg/pacman-*-$arch.pkg.tar.xz >/dev/null 2>&1
@@ -437,10 +431,11 @@ function testSetUrl {
 	
 	# Setup Pacman Config
 	for arch in x86_64 armv6h; do
+		CLIDIR=$THISDIR/client.$arch
 		rm -rf \
-			$THISDIR/client.$arch/usr \
-			$THISDIR/client.$arch/var \
-			$THISDIR/client.$arch/archlinux*
+			$CLIDIR/usr \
+			$CLIDIR/var \
+			$CLIDIR/archlinux*
 		makePacmanConf "$arch"
 		rc=$?
 		if [ $rc -ne 0 ] ; then return $rc; fi
@@ -448,6 +443,7 @@ function testSetUrl {
 	unset arch
 
 	# Tests of compatibility setup
+	CLIDIR=$THISDIR/client.x86_64
 	testUpload && \
 	testX86Index && \
 	testLoadX86Pkg && \
@@ -458,6 +454,7 @@ function testSetUrl {
 
 	if [ $rc -eq 0 ] ; then
 		for arch in x86_64 armv6h; do
+			CLIDIR=$THISDIR/client.$arch
 			local suburl
 			if [ "$arch" == "x86_64" ] ; then
 				suburl="archlinux"
