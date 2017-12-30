@@ -368,6 +368,35 @@ function testSetLocal {
 
 	return $rc
 }
+
+##############################################################################
+function testSetUrlCompatDisabled {
+	# Execute all Test for One Architecture / setup that is disabled
+	# it means we expect the tests to fail
+	# we expect some Environment Variables to be set correclty:
+	#    - URL
+	#    - CLIDIR
+	#    - CLI_TYPE  (for handling anomalies, expected compat*)
+	#    - arch
+	printf  "Testing Disabled Compat URL %s\n" "$URL"
+	printf "\tClientDir: %s\n" "$CLIDIR"
+	printf "\tArch: %s\n" "$arch"
+
+	#
+    # Now start the real tests
+    #
+	#testUpload "$URL/test/upload"
+	#rc=$?; if [ $rc -ne 0 ] ; then return $rc; fi
+
+	#testIndex
+	#rc=$?; if [ $rc -ne 0 ] ; then return $rc; fi
+
+	#testLoadPkg
+	#rc=$?; if [ $rc -ne 0 ] ; then return $rc; fi
+		
+	return 0
+}
+
 ##############################################################################
 function testSetUrlOneArch {
 	# Execute all Test for One Architecture / setup
@@ -516,8 +545,14 @@ function testSetUrl {
 		#
 		
 		pushd $THISDIR >/dev/null
-		testSetUrlOneArch
-		rc=$?;
+		if ( [ "$CLI_TYPE" == "compat-x86_64" ] ||
+		     [ "$CLI_TYPE" == "compat-armv6h" ] ) &&
+		   [ "$COMPAT" == "0" ] ; then
+			testSetUrlCompatDisabled
+		else 
+			testSetUrlOneArch
+			rc=$?;
+		fi
 		popd >/dev/null
 		
 		if [ $rc -ne 0 ] ; then break; fi		
