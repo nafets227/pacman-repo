@@ -1,0 +1,12 @@
+# Maintainer: Stefan Schallenberg <nafets227@users.noreply.github.com>
+#
+# This is a useless package, its only purpose is to serve as test-file
+# for the pacman-repo https://github.com/nafets227/pacman-repo
+ 
+pkgname=pacman-repo-test1
+pkgver=1
+pkgrel=1
+pkgdesc="Test Package for pacman-repo"
+arch=(any)
+url="https://github.com/nafets227/pacman-repo"
+license=('GPL')
