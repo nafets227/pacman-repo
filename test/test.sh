@@ -535,6 +535,7 @@ function testSetUrl {
 
 		URL="$BASE_URL$suburl"
 		CONT_LOG="$BASE_CONT_LOG"
+		COMPAT="$BASE_COMPAT"
 		
 		if  [ ! -z "$BASE_CONT_CACHE" ] ; then
 			CONT_CACHE=$BASE_CONT_CACHE$subpath
