@@ -54,37 +54,31 @@ function makePacmanConf {
 		GPGDir       = $CLIDIR/etc/pacman.d/gnupg/
 		HookDir      = $CLIDIR/etc/pacman.d/hooks/
 
+		[core]
+		Server = $URL/\$repo/os/\$arch
+
 		EOF
 
 	# Add Test repository only for x86_64 since our testpackage is
 	# only available on that architecture and any other architecture
 	# would create errors when trying to load the database that will
 	# not be initialised because no upload is executed.
-	if [ $CLI_TYPE == "x86_64" ] ; then
+	if [ $CLI_TYPE != "compat-armv6h" ] &&
+	   [ $CLI_TYPE != "armv6h" ] ; then
 		cat >>$PACMAN_CONF <<-EOF
-		[core]
-		Server = $URL/\$repo/os/\$arch
-
 		##### This is for testing our local repository
 		[test]
 		SigLevel = Optional # do not require signed packages or DBs
 		Server = $URL/\$repo/os/\$arch
 		EOF
-		PKGURL="https://www.archlinux.org/packages/core/any/archlinux-keyring/download"
-	elif [ $CLI_TYPE == "armv6h" ] ; then
-		cat >>$PACMAN_CONF <<-EOF
-		[core]
-		Server = $URL/archlinuxarm/\$repo/os/\$arch
+	fi
 
-		# test repository disabled as we do not yet upload something so
-		# no index files are available.
-		#[test]
-		#SigLevel = Optional # do not require signed packages or DBs
-		#Server = $URL/archlinuxarm/\$repo/os/\$arch
-		EOF
+	if [ $arch == "x86_64" ] ; then
+		PKGURL="https://www.archlinux.org/packages/core/any/archlinux-keyring/download"
+	elif [ $arch == "armv6h" ] ; then
 		PKGURL="http://mirror.archlinuxarm.org/armv6h/core/archlinuxarm-keyring-20140119-1-any.pkg.tar.xz"
 	else
-		printf "ERROR: Unsupported architecture %s.\n" "$CLI_TYPE"
+		printf "ERROR: Unsupported architecture %s.\n" "$arch"
 		return 1
 	fi
 
@@ -154,9 +148,6 @@ function testUpload {
 	STARTTIME=$(date +%s)
 	URL_UPLOAD="${1:-$URL/test/upload/}"
 	printf "*********** testUpload start ($CLI_TYPE $URL_UPLOAD) **********\n"
-	if [ ! -z "$CONT_REPO" ] ; then
-		local CONT_REPO="$CONT_REPO/archlinux"
-	fi
 	if [ ! -z "$CONT_REPO" ] && \
 	   [ -f $CONT_REPO/test/os/x86_64/$TESTPKGNAM ] ; then
 		printf "Error - Package File %s exists before RUN\n" "$CONT_REPO/test/os/x86_64/$TESTPKGNAM"
@@ -213,20 +204,6 @@ function testIndex {
 	return 0
 }
 
-##### Test: Loading x86 Repository index #####################################
-function testX86Index {
-	local arch="x86_64"
-	testIndex
-	return $?
-}
-
-##### Test: Loading ARM Repository index #####################################
-function testArmIndex {
-	local arch="armv6h"
-	testIndex
-	return $?
-}
-
 ##### Test: Loading Package of custom repo ####################################
 function testDownload {
 	STARTTIME=$(date +%s)
@@ -276,26 +253,6 @@ function testLoadPkg {
 
 	printf "*********** testLoadPkg success ($CLI_TYPE) **********\n"
 	return 0
-}
-
-##### Test: Loading a X86 package from public ################################
-function testLoadX86Pkg {
-	local arch="x86_64"
-	if  [ ! -z "$CONT_CACHE" ] ; then
-		local CONT_CACHE=$CONT_CACHE/archlinux
-	fi
-	testLoadPkg
-	return $?
-}
-
-##### Test: Loading a ARM package from public ################################
-function testLoadArmPkg {
-	local arch="armv6h"
-	if  [ ! -z "$CONT_CACHE" ] ; then
-		local CONT_CACHE=$CONT_CACHE/archlinuxarm
-	fi
-	testLoadPkg
-	return $?
 }
 
 ##############################################################################
@@ -402,97 +359,161 @@ function testSetLocal {
 
 	return $rc
 }
+##############################################################################
+function testSetUrlOneArch {
+	# Execute all Test for One Architecture / setup
+	# we expect some Environment Variables to be set correclty:
+	#    - URL
+	#    - CLIDIR
+	#    - CLI_TYPE  (for handling anomalies)
+	#    - arch
+	#    - CURL_USER [optional]
+	#    - CONT_CACHE [optional]
+	#    - CONT_REPO [optional]
+	printf  "Testing URL %s\n" "$URL"
+	printf "\tClientDir: %s\n" "$CLIDIR"
+	printf "\tArch: %s\n" "$arch"
+    if [ ! -z "$CURL_USER" ] ; then 
+		printf "\tUserID/PW: %s\n" "$CURL_USER"
+	else
+		printf "\tNo UserID/PW\n"; 
+	fi
+	if [ ! -z "$CONT_CACHE" ] ; then
+		printf "\tCacheDir : %s\n" "$CONT_CACHE"
+	else
+		printf "\tNo CacheDir\n";
+	fi
+	if [ ! -z "$CONT_REPO" ] ; then
+		printf "\tRepoDir : %s\n" "$CONT_REPO" 
+	else
+		printf "\tNo RepoDir\n";
+	fi
+	if [ ! -z "$CONT_LOG" ] ; then
+		printf "\tLog Command : %s\n" "$CONT_LOG" 
+	else
+		printf "\tNo Log Command\n";
+	fi
+
+	if [ ! -z "$CURL_USER" ] ; then
+		local CURL_USER="-u $CURL_USER"
+	fi
+
+	#
+    # Now start the real tests
+    #
+	if [ "$CLI_TYPE" == "compat-x86_64" ] ; then
+		testUpload "$URL/test/upload"
+		rc=$?; if [ $rc -ne 0 ] ; then return $rc; fi
+	elif [ "$CLI_TYPE" == "compat-armv6h" ] ; then
+		# Uploading of armv6 in compatibility mode is not supported
+		# so dont test it.
+		/bin/true
+	else
+		testUpload "$URL.upload/test"
+		rc=$?; if [ $rc -ne 0 ] ; then return $rc; fi
+	fi
+
+	testIndex
+	rc=$?; if [ $rc -ne 0 ] ; then return $rc; fi
+
+	if [ "$CLI_TYPE" != "compat-armv6h" ] &&
+	   [ "$CLI_TYPE" != "armv6h" ] ; then
+	   	# Our testpackage is available only for x86_64 architecture.
+	   	# so we cannot test the download in armv6h architecture.
+		testDownload
+		rc=$?; if [ $rc -ne 0 ] ; then return $rc; fi
+	fi
+	
+	testLoadPkg
+	rc=$?; if [ $rc -ne 0 ] ; then return $rc; fi
+		
+	return 0
+}
 
 ##############################################################################
 function testSetUrl {
-	pushd $THISDIR >/dev/null
 
 	# Reading Parameters
-	URL="$1"
-	CURL_USER="$2"
-	CONT_CACHE="$3"
-	CONT_REPO="$4"
-	CONT_LOG="$5"
+	BASE_URL="$1"
+	BASE_CURL_USER="$2"
+	BASE_CONT_CACHE="$3"
+	BASE_CONT_REPO="$4"
+	BASE_CONT_LOG="$5"
 
-	printf  "Testing URL %s\n" "$URL"
-       	if [ ! -z "$CURL_USER" ] ; then 
-		printf "\tUserID/PW: %s\n" "$CURL_USER"
-	else    printf "\tNo UserID/PW\n"; fi
-	if [ ! -z "$CONT_CACHE" ] ; then
-		printf "\tCacheDir : %s\n" "$CONT_CACHE"
-	else    printf "\tNo CacheDir\n"; fi
-	if [ ! -z "$CONT_REPO" ] ; then
-		printf "\tRepoDir : %s\n" "$CONT_REPO" 
-	else    printf "\tNo RepoDir\n"; fi
-	if [ ! -z "$CONT_LOG" ] ; then
-		printf "\tLog Command : %s\n" "$CONT_LOG" 
-	else    printf "\tNo Log Command\n"; fi
-
-	if [ ! -z "$CURL_USER" ] ; then CURL_USER="-u $CURL_USER"; fi
-	
-	# Setup Pacman Config
-	for CLI_TYPE in x86_64 armv6h; do
+	for CLI_TYPE in compat-x86_64 compat-armv6h  x86_64 armv6h; do
 		CLIDIR=$THISDIR/client.$CLI_TYPE
-		arch=$CLI_TYPE
+
+		#
+		# Set correct environment for tests
+		#
+		local suburl subpath
+		if [ "$CLI_TYPE" == "x86_64" ] ; then
+			suburl="/archlinux"
+			subpath="$suburl"
+			arch="$CLI_TYPE"
+		elif [ "$CLI_TYPE" == "armv6h" ] ; then
+			suburl="/archlinuxarm"
+			subpath="$suburl"
+			arch="$CLI_TYPE"
+		elif [ "$CLI_TYPE" == "compat-x86_64" ] ; then
+			suburl=""
+			subpath="/archlinux"
+			arch="x86_64"
+		elif [ "$CLI_TYPE" == "compat-armv6h" ] ; then
+			suburl=""
+			subpath="/archlinuxarm"
+			arch="armv6h"
+		else
+			printf "Unknown Arch %s. Aborting\n" "$arch"
+			rc=2; break
+		fi
+
+		URL="$BASE_URL$suburl"
+		CONT_LOG="$BASE_CONT_LOG"
+		
+		if  [ ! -z "$BASE_CONT_CACHE" ] ; then
+			CONT_CACHE=$BASE_CONT_CACHE$subpath
+		else
+			unset CONT_CACHE
+		fi
+
+		if [ ! -z "$BASE_CONT_REPO" ] ; then
+			CONT_REPO=$BASE_CONT_REPO$subpath
+			if [ -w "$CONT_REPO/test" ] ; then
+				rm -rf $CONT_REPO/test
+			elif [ -e "$CONT_REPO/test" ] ; then 
+				printf "Error: Cannot write to %s. Aborting.\n" \
+				"$CONT_REPO/test"
+				rc=1; break;
+			fi
+		else
+			unset CONT_REPO
+		fi
+
+		#
+		# Setup Pacman Config
+		#
 		rm -rf \
 			$CLIDIR/usr \
 			$CLIDIR/var \
 			$CLIDIR/archlinux*
 		makePacmanConf "$CLI_TYPE"
 		rc=$?
-		if [ $rc -ne 0 ] ; then return $rc; fi
-	done
-	unset arch
+		if [ $rc -ne 0 ] ; then break; fi
 
-	# Tests of compatibility setup
-	CLIDIR=$THISDIR/client.x86_64
-	arch=x86_64
-	testUpload && \
-	testX86Index && \
-	testLoadX86Pkg && \
-	testDownload && \
-	testArmIndex && \
-	testLoadArmPkg
-	rc=$?
-
-	if [ $rc -eq 0 ] ; then
-		for CLI_TYPE in x86_64 armv6h; do
-			CLIDIR=$THISDIR/client.$CLI_TYPE
-			arch=$CLI_TYPE
-			local suburl
-			if [ "$CLI_TYPE" == "x86_64" ] ; then
-				suburl="archlinux"
-			elif [ "$CLI_TYPE" == "armv6h" ] ; then
-				suburl="archlinuxarm"
-			else
-				printf "Unknown CLI_TYPE %s. Aborting\n" "$CLI_TYPE"
-				return 2
-			fi
-			local URL="$URL/$suburl"
-			local CONT_CACHE CONT_REPO
-			if  [ ! -z "$CONT_CACHE" ] ; then
-				local CONT_CACHE=$CONT_CACHE/$suburl
-			fi
-			if [ ! -z "$CONT_REPO" ] ; then
-				local CONT_REPO=$CONT_CACHE/$suburl
-			fi
-			
-#			testUpload && \
-#			testDownload && \
-			testIndex && \
-			testLoadPkg
-			rc=$?
-			
-			if [ $rc -ne 0 ] ; then
-				return $rc
-			fi
-			
-		done
-	fi
+		#
+		# Now executre the real tests of one architecture
+		#
 		
-	# Shutdown
-	popd >/dev/null
+		pushd $THISDIR >/dev/null
+		testSetUrlOneArch
+		rc=$?;
+		popd >/dev/null
+		
+		if [ $rc -ne 0 ] ; then break; fi		
 
+	done
+		
 	return $rc
 }
 
