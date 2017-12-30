@@ -423,7 +423,7 @@ function testSetUrlOneArch {
 		testDownload
 		rc=$?; if [ $rc -ne 0 ] ; then return $rc; fi
 	fi
-	
+
 	testLoadPkg
 	rc=$?; if [ $rc -ne 0 ] ; then return $rc; fi
 		
