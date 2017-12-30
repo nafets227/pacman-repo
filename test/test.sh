@@ -146,8 +146,13 @@ function makePacmanConf {
 ##### Test: Uploading a package ##############################################
 function testUpload {
 	STARTTIME=$(date +%s)
-	URL_UPLOAD="${1:-$URL/test/upload/}"
 	printf "*********** testUpload start ($CLI_TYPE $URL_UPLOAD) **********\n"
+	if [ -z "$1" ] ; then
+		printf "Error - no URL given as Parm. Aborting\n"
+		return 2
+	else
+		URL_UPLOAD="$1"
+	fi
 	if [ ! -z "$CONT_REPO" ] && \
 	   [ -f $CONT_REPO/test/os/x86_64/$TESTPKGNAM ] ; then
 		printf "Error - Package File %s exists before RUN\n" "$CONT_REPO/test/os/x86_64/$TESTPKGNAM"
