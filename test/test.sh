@@ -396,7 +396,8 @@ function testSetUrlCompatDisabled {
     # Test Upload
 	http_code=$(curl -Lfi -w "%{http_code}" --data-binary @$TESTPKGNAM $URL/test/upload)
 	rc=$?
-	if [ "$rc" -ne 22 ] || [ $http_code != "404" ] ; then
+	if [ "$rc" -ne 22 ] || 
+	   ( [ $http_code != "404" ] && [ $http_code != "413" ] ) ; then
 		printf "Error - upload RC=%s (exp=22), HTTP %s (exp=404)\n" \
 			"$rc" "$http_code"
 		return 1
