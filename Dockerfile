@@ -1,17 +1,18 @@
-FROM pritunl/archlinux:2017-12-23
+FROM archlinux/base
 
 MAINTAINER Stefan Schallenberg aka nafets227 <infos@nafets.de>
 LABEL Description="Pacman repository (private and caching) in a container"
 
 RUN \
+	pacman -Suy --noconfirm && \
 	pacman -S --needed --noconfirm \
-		systemd \	
 		nginx \
 		perl-fcgi && \
-	paccache -r -k0 && \
-	rm -rf /usr/share/man/* && \
-	rm -rf /tmp/* && \
-	rm -rf /var/tmp/*
+    rm -rf \
+      /var/tmp/* \
+      /usr/share/man/* \
+      /var/cache/pacman/pkg/* \
+      /var/lib/pacman/sync/*
 
 RUN \
 	sed -e 's:bsdtar -xf :bsdtar --no-xattrs --no-fflags -xf :' \
