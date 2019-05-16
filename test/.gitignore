@@ -1,3 +1,6 @@
-cache
-client.*
-repo
+/cache
+/client.*
+/repo
+/pkg
+/src
+/test-container.log

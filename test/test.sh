@@ -68,7 +68,8 @@ function makePacmanConf {
 		cat >>$PACMAN_CONF <<-EOF
 		##### This is for testing our local repository
 		[test]
-		SigLevel = Optional # do not require signed packages or DBs
+		# do not require signed packages or DBs
+		SigLevel = Optional 
 		Server = $URL/\$repo/os/\$arch
 		EOF
 	fi
@@ -297,8 +298,12 @@ function localsetup_start {
 	if [ ! -z "$1T" ] ; then
 		export COMPAT="$1"
 	fi
-	
+
 	export RESOLVER="$(sed -n -e 's/nameserver \(.*\)/\1/p' </etc/resolv.conf)"
+	if [ "$RESOLVER" == "127.0.0.53" ] ; then # localhost not available in container
+		export RESOLVER="192.168.108.1" # @TODO: dont use our default.
+	fi
+
 	export NGINX_LOGLVL=""
 	docker-compose \
 		-f $THISDIR/docker-compose.yaml \
@@ -316,6 +321,10 @@ function localsetup_start {
 
 ##### LocalSetup: Stop Containers ############################################
 function localsetup_end {
+	docker-compose \
+		-f $THISDIR/docker-compose.yaml \
+		-p pacman-repo \
+		logs >$THISDIR/test-container.log
 	docker-compose \
 		-f $THISDIR/docker-compose.yaml \
 		-p pacman-repo \
