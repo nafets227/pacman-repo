@@ -128,11 +128,13 @@ sub analysePkg {
 	# Architecture    : x86_64
 	# ...
 
+	my $varname = "";
+	my $value = "";
 	foreach my $line (split /[\r\n]+/, $output) {
 		print "$line<br>\n";
-		if ( $line =~ /^([\w ]+)\s*:\s*(.+)$/ ) {
-			my $varname = $1;
-			my $value = $2;
+		if ( $line =~ /^(\w[\w,-,_,\s]*)\s*:\s*(.+)$/ ) {
+			$varname = $1;
+			$value = $2;
 			# remove trailing blanks
 			$varname =~ s/\s+$//;
 			$value =~ s/\s+$//;
@@ -141,7 +143,17 @@ sub analysePkg {
 			#print "$varname=$value\n";
 
 			$pkgMeta{$varname} = $value;
-			}
+		}
+		elsif ( $line =~ /^\s\s*(.+)$/ ) {
+			my $value = $1;
+			# remove trailing blanks
+			$value =~ s/\s+$//;
+
+			#debug
+			#print "$varname += $value\n";
+
+			$pkgMeta{$varname} = $pkgMeta{$varname} . $value;
+		}
 		else {
 			print STDERR "Could not parse ouput-line from pacman: $line\n";
 			print "Error parsing package file\n";
