@@ -10,3 +10,8 @@ pkgdesc="Test Package for pacman-repo"
 arch=(any)
 url="https://github.com/nafets227/pacman-repo"
 license=('GPL')
+# have "-" in multi-line optdepends to test parser
+optdepends=('lirc-utils: remote control support'
+            'ncurses: skincurses plugin'
+            'vdr-xorg: To start X11')
+
