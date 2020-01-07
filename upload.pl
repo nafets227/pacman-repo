@@ -178,7 +178,7 @@ sub verifyPkg {
 	#	PKGEXT=".pkg.tar.gz", SRCEXT=".src.tar.gz" 
 	#	Sets the compression used when making compiled or source
 	#	packages. Valid suffixes are .tar, .tar.gz, .tar.bz2, .tar.xz,
-	#	.tar.lzo, .tar.lrz, and .tar.Z. Do not touch these unless you
+	#	.tar.lzo, .tar.lrz, .tar.Z. and .tar.zst. Do not touch these unless you
 	#	 know what you are doing. 
 	# Detection of compression formats is taken from stackoverflow
 	#	http://stackoverflow.com/questions/19120676/how-to-detect-type-of-compression-used-on-the-file-if-no-file-extension-is-spe)
@@ -217,7 +217,7 @@ sub uploadPkg {
 	$dest_dir =~ s/\$repo/$repo/g;
 	if ( $arch eq "any" ) {
 		# @TODO: if we support multiple architecture we need to copy
-		#        the package in ALL architecrutre directories.
+		#        the package in ALL architecture directories.
 		$dest_dir =~ s/\$arch/x86_64/g;
 	}
 	else {
@@ -227,6 +227,7 @@ sub uploadPkg {
 
 	my $dest_fnam = "$pkgMeta{'Name'}-$pkgMeta{'Version'}-$pkgMeta{'Architecture'}";
 
+	# @TODO support uploading .zst on top to .xz files 
 	my $dest_ext = "pkg.tar.xz";
 
 

@@ -18,7 +18,7 @@ location /archlinux/ {
 		# Requests for actual packages should be served directly from cache if 
 		# available. If not available, retrieve and save the package from an 
 		# upstream mirror.
-		location ~ ^/archlinux/.*\.tar\.xz$ {
+		location ~ ^/archlinux/.*\.tar\.(xz|zst)$ {
 			root /srv/pacman-cache;
 			autoindex on;
 			set $pkgtype "pkg";
