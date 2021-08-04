@@ -1,6 +1,6 @@
-FROM archlinux/base
+FROM archlinux/archlinux
 
-MAINTAINER Stefan Schallenberg aka nafets227 <infos@nafets.de>
+LABEL org.opencontainers.image.authors="Stefan Schallenberg aka nafets227 <infos@nafets.de>"
 LABEL Description="Pacman repository (private and caching) in a container"
 
 RUN \
