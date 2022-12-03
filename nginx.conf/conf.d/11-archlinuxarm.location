@@ -50,7 +50,6 @@ location ~ ^/(?<repo>[^/]+)/os/(?<urlpath>armv6h.*)$ {
 location @arm_mirror {
 	root /srv/pacman-cache;
 	proxy_store on;
-	proxy_redirect off;
 	proxy_store_access user:rw group:rw all:r;
 	proxy_pass http://mirror.archlinuxarm.org/$arch/$repo/$pkg;
 	proxy_redirect $uri /$arch/$repo/$pkg;
