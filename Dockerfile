@@ -8,16 +8,16 @@ RUN \
 	pacman -S --needed --noconfirm \
 		nginx \
 		perl-fcgi && \
-    rm -rf \
-      /var/tmp/* \
-      /usr/share/man/* \
-      /var/cache/pacman/pkg/* \
-      /var/lib/pacman/sync/*
+	rm -rf \
+		/var/tmp/* \
+		/usr/share/man/* \
+		/var/cache/pacman/pkg/* \
+		/var/lib/pacman/sync/*
 
 RUN \
 	sed -e 's:bsdtar -xf :bsdtar --no-xattrs --no-fflags -xf :' \
 		</usr/bin/repo-add \
-		>/usr/local/bin/repo-add && \ 
+		>/usr/local/bin/repo-add && \
 	chmod 755 /usr/local/bin/repo-add
 
 EXPOSE 80 443

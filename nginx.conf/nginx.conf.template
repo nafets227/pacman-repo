@@ -30,11 +30,11 @@ http {
 	server {
 		listen 80;
 		server_name localhost;
-	
+
 		set $pkgtype "unknown";
 		set $COMPAT ${COMPAT};
-	
+
 		include /etc/nginx/conf.d/*.location;
 	}
-	
+
 }

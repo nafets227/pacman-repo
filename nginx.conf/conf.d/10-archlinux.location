@@ -3,7 +3,7 @@ location /archlinux/ {
 		# Handle official Arch Linux repositories as caching only.
 		# path for request: /$repo/os/$arch/<package>
 
-		# Requests for package db and signature files should redirect upstream 
+		# Requests for package db and signature files should redirect upstream
 		# without caching
 		location ~ ^/archlinux/.*\.(db|sig)$ {
 			autoindex  on;
@@ -15,8 +15,8 @@ location /archlinux/ {
 			return 404;
 		}
 
-		# Requests for actual packages should be served directly from cache if 
-		# available. If not available, retrieve and save the package from an 
+		# Requests for actual packages should be served directly from cache if
+		# available. If not available, retrieve and save the package from an
 		# upstream mirror.
 		location ~ ^/archlinux/.*\.tar\.(xz|zst)$ {
 			root /srv/pacman-cache;
@@ -33,10 +33,10 @@ location /archlinux/ {
 		root /srv/pacman-repo;
 		autoindex   on;
 	}
-  
+
 } # location /archlinux
 
-# for compatibility redirect uploads  
+# for compatibility redirect uploads
 location ~ ^/(?<repo>[^/]+)/upload/?$ {
 	client_body_buffer_size 128K;
 	client_max_body_size 1000M;

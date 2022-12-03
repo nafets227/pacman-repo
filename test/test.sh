@@ -63,15 +63,16 @@ function makePacmanConf {
 	# only available on that architecture and any other architecture
 	# would create errors when trying to load the database that will
 	# not be initialised because no upload is executed.
-	if [ $CLI_TYPE != "compat-armv6h" ] &&
-	   [ $CLI_TYPE != "armv6h" ] ; then
+	if	[ $CLI_TYPE != "compat-armv6h" ] &&
+		[ $CLI_TYPE != "armv6h" ]
+	then
 		cat >>$PACMAN_CONF <<-EOF
-		##### This is for testing our local repository
-		[test]
-		# do not require signed packages or DBs
-		SigLevel = Optional 
-		Server = $URL/\$repo/os/\$arch
-		EOF
+			##### This is for testing our local repository
+			[test]
+			# do not require signed packages or DBs
+			SigLevel = Optional
+			Server = $URL/\$repo/os/\$arch
+			EOF
 	fi
 
 	if [ $arch == "x86_64" ] ; then
@@ -118,16 +119,16 @@ function makePacmanConf {
 	while IFS=: read key_id _; do
 		# skip blank lines, comments; there are valid in this file
 		[[ -z $key_id || ${key_id:0:1} = \# ]] && continue
-		
+
 		# Mark thie ley to be lsigned
 		trusted_ids[$key_id]=archlinux
 	done < $CLIDIR//usr/share/pacman/keyrings/archlinux*-trusted
-	
+
 	pacman-key \
 		--config $PACMAN_CONF \
 		--lsign-key "${!trusted_ids[@]}"
 	rc=$? ; if [ $rc -ne 0 ] ; then return $rc; fi
-		 
+
 	gpg \
 		--homedir $CLIDIR/etc/pacman.d/gnupg \
 		--no-permission-warning \
@@ -135,8 +136,8 @@ function makePacmanConf {
 	rc=$? ; if [ $rc -ne 0 ] ; then return $rc; fi
 
 	printf "********** makePacmanConf $CLI_TYPE success ***********\n"
-	
-	return 0	
+
+	return 0
 }
 
 #-----------------------------------------------------------------------------
@@ -154,8 +155,9 @@ function testUpload {
 	else
 		URL_UPLOAD="$1"
 	fi
-	if [ ! -z "$CONT_REPO" ] && \
-	   [ -f $CONT_REPO/test/os/x86_64/$TESTPKGNAM ] ; then
+	if	[ ! -z "$CONT_REPO" ] && \
+		[ -f $CONT_REPO/test/os/x86_64/$TESTPKGNAM ]
+	then
 		printf "Error - Package File %s exists before RUN\n" "$CONT_REPO/test/os/x86_64/$TESTPKGNAM"
 		return 1
 	fi
@@ -270,7 +272,7 @@ function testperllocal {
 	LC_ALL=C $THISDIR/../upload.pl $THISDIR/testpkgtemp
 	local rc=$?
 	test -f $THISDIR/testpkgtemp && rm $THISDIR/testpkgtemp
-	
+
 	return $rc
 }
 
@@ -315,8 +317,8 @@ function localsetup_start {
 	if [ $? -ne 0 ] ; then return 1 ; fi
 		
 	sleep 2
-	
-	return 0		
+
+	return 0
 }
 
 ##### LocalSetup: Stop Containers ############################################
@@ -328,7 +330,7 @@ function localsetup_end {
 	docker-compose \
 		-f $THISDIR/docker-compose.yaml \
 		-p pacman-repo \
-		down 
+		down
 }
 
 ##### LocalSetup: print log ##################################################
@@ -347,21 +349,21 @@ function localsetup_log {
 ##############################################################################
 function testSetSmall {
 	URL="http://localhost:8084"
-	
+
 	localsetup_start || return 1
 	printf "Debug: curl\n";
 	curl -Li $CURL_USER --data-binary @$THISDIR/$TESTPKGNAM $URL/test/upload/
 	printf "Debug: logs\n";
 	localsetup_log
 	printf "Debug: down\n";
-	localsetup_end 
+	localsetup_end
 }
 
 ##############################################################################
 function testSetLocal {
 	# Startup
 	rm -rf $THISDIR/cache $THISDIR/repo >/dev/null
-	
+
 	for COMPAT in 0 1 ; do
 		localsetup_start "$COMPAT" || return 1
 
@@ -373,10 +375,10 @@ function testSetLocal {
 			"$THISDIR/repo" \
 			"localsetup_log"
 		rc=$?
-		
+
 		# Shutdown
 		localsetup_end
-		
+
 		if [ $rc -ne 0 ] ; then break; fi
 	done
 
@@ -399,20 +401,21 @@ function testSetUrlCompatDisabled {
 	printf "*********** testSetUrlCompatDisabled start ($CLI_TYPE) **********\n"
 
 	#
-    # Now start the real tests
-    #
-    
-    # Test Upload
+	# Now start the real tests
+	#
+
+	# Test Upload
 	http_code=$(curl -Lfi -w "%{http_code}" --data-binary @$TESTPKGNAM $URL/test/upload)
 	rc=$?
-	if [ "$rc" -ne 22 ] || 
-	   ( [ $http_code != "404" ] && [ $http_code != "413" ] ) ; then
+	if	[ "$rc" -ne 22 ] ||
+		( [ $http_code != "404" ] && [ $http_code != "413" ] )
+	then
 		printf "Error - upload RC=%s (exp=22), HTTP %s (exp=404)\n" \
 			"$rc" "$http_code"
 		return 1
 	fi
 
-    # Test Loading Index
+	# Test Loading Index
 	pacman -Syy $PACMAN_OPT --config $CLIDIR/etc/pacman.conf
 	rc=$?
 	if [ $rc -ne 1 ] ; then
@@ -428,7 +431,7 @@ function testSetUrlCompatDisabled {
 			"$rc"
 		return 1
 	fi
-			
+
 	printf "*********** testSetUrlCompatDisabled success ($CLI_TYPE) **********\n"
 	return 0
 }
@@ -447,10 +450,10 @@ function testSetUrlOneArch {
 	printf  "Testing URL %s\n" "$URL"
 	printf "\tClientDir: %s\n" "$CLIDIR"
 	printf "\tArch: %s\n" "$arch"
-    if [ ! -z "$CURL_USER" ] ; then 
+	if [ ! -z "$CURL_USER" ] ; then
 		printf "\tUserID/PW: %s\n" "$CURL_USER"
 	else
-		printf "\tNo UserID/PW\n"; 
+		printf "\tNo UserID/PW\n";
 	fi
 	if [ ! -z "$CONT_CACHE" ] ; then
 		printf "\tCacheDir : %s\n" "$CONT_CACHE"
@@ -458,12 +461,12 @@ function testSetUrlOneArch {
 		printf "\tNo CacheDir\n";
 	fi
 	if [ ! -z "$CONT_REPO" ] ; then
-		printf "\tRepoDir : %s\n" "$CONT_REPO" 
+		printf "\tRepoDir : %s\n" "$CONT_REPO"
 	else
 		printf "\tNo RepoDir\n";
 	fi
 	if [ ! -z "$CONT_LOG" ] ; then
-		printf "\tLog Command : %s\n" "$CONT_LOG" 
+		printf "\tLog Command : %s\n" "$CONT_LOG"
 	else
 		printf "\tNo Log Command\n";
 	fi
@@ -473,8 +476,8 @@ function testSetUrlOneArch {
 	fi
 
 	#
-    # Now start the real tests
-    #
+	# Now start the real tests
+	#
 	if [ "$CLI_TYPE" == "compat-x86_64" ] ; then
 		testUpload "$URL/test/upload"
 		rc=$?; if [ $rc -ne 0 ] ; then return $rc; fi
@@ -490,17 +493,18 @@ function testSetUrlOneArch {
 	testIndex
 	rc=$?; if [ $rc -ne 0 ] ; then return $rc; fi
 
-	if [ "$CLI_TYPE" != "compat-armv6h" ] &&
-	   [ "$CLI_TYPE" != "armv6h" ] ; then
-	   	# Our testpackage is available only for x86_64 architecture.
-	   	# so we cannot test the download in armv6h architecture.
+	if	[ "$CLI_TYPE" != "compat-armv6h" ] &&
+		[ "$CLI_TYPE" != "armv6h" ]
+	then
+		# Our testpackage is available only for x86_64 architecture.
+		# so we cannot test the download in armv6h architecture.
 		testDownload
 		rc=$?; if [ $rc -ne 0 ] ; then return $rc; fi
 	fi
 
 	testLoadPkg
 	rc=$?; if [ $rc -ne 0 ] ; then return $rc; fi
-		
+
 	return 0
 }
 
@@ -547,7 +551,7 @@ function testSetUrl {
 		CONT_LOG="$BASE_CONT_LOG"
 		CURL_USER="$BASE_CURL_USER"
 		COMPAT="$BASE_COMPAT"
-		
+
 		if  [ ! -z "$BASE_CONT_CACHE" ] ; then
 			CONT_CACHE=$BASE_CONT_CACHE$subpath
 		else
@@ -558,7 +562,7 @@ function testSetUrl {
 			CONT_REPO=$BASE_CONT_REPO$subpath
 			if [ -w "$CONT_REPO/test" ] ; then
 				rm -rf $CONT_REPO/test
-			elif [ -e "$CONT_REPO/test" ] ; then 
+			elif [ -e "$CONT_REPO/test" ] ; then
 				printf "Error: Cannot write to %s. Aborting.\n" \
 				"$CONT_REPO/test"
 				rc=1; break;
@@ -581,23 +585,24 @@ function testSetUrl {
 		#
 		# Now executre the real tests of one architecture
 		#
-		
+
 		pushd $THISDIR >/dev/null
-		if ( [ "$CLI_TYPE" == "compat-x86_64" ] ||
-		     [ "$CLI_TYPE" == "compat-armv6h" ] ) &&
-		   [ "$COMPAT" == "0" ] ; then
+		if	(	[ "$CLI_TYPE" == "compat-x86_64" ] ||
+				[ "$CLI_TYPE" == "compat-armv6h" ] ) &&
+			[ "$COMPAT" == "0" ]
+		then
 			testSetUrlCompatDisabled
 			rc=$?;
-		else 
+		else
 			testSetUrlOneArch
 			rc=$?;
 		fi
 		popd >/dev/null
-		
-		if [ $rc -ne 0 ] ; then break; fi		
+
+		if [ $rc -ne 0 ] ; then break; fi
 
 	done
-		
+
 	return $rc
 }
 
@@ -608,7 +613,7 @@ function testSetUrl {
 #-----------------------------------------------------------------------------
 export THISDIR=$(getDir)
 export TESTPKGNAM="binutils-efi-2.27-1.90-x86_64.pkg.tar.xz"
-export PACMAN_OPT="-dd --noconfirm" 
+export PACMAN_OPT="-dd --noconfirm"
 
 # check syntax to avoid actions that will fail anyhow.
 testperlsyntax || exit 1

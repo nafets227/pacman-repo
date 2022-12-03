@@ -7,8 +7,8 @@
 
 # Environment variables recognized:
 test -z "$NGINX_LOGLVL" && NGINX_LOGLVL="warn"
-test -z "$RESOLVER" && RESOLVER="127.0.0.1" 
-test -z "$COMPAT" && COMPAT="0" 
+test -z "$RESOLVER" && RESOLVER="127.0.0.1"
+test -z "$COMPAT" && COMPAT="0"
 
 if [ "$COMPAT" != "1" ] && [ "$COMPAT" != "0" ] ; then
 	printf "Invalid value of COMPAT Environment variable: \"%s\"\n" "$COMPAT"
@@ -33,7 +33,7 @@ sed \
 	-e "s/\${RESOLVER}/$RESOLVER/" \
 	-e "s/\${COMPAT}/$COMPAT/" \
 	</etc/nginx/nginx.conf.template \
-	>/etc/nginx/nginx.conf 
+	>/etc/nginx/nginx.conf
 
 #Now run Nginx (not forking!)
 nginx -g "daemon off;"

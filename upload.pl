@@ -29,11 +29,11 @@ sub handler_deprecated {
 	use constant HTTP_OK                        => 200;
 	use constant HTTP_BAD_REQUEST               => 400;
 	use constant HTTP_INTERNAL_SERVER_ERROR     => 500;
-	
+
 	my $r = shift;
 
 	# calling perl directly from the upload location does not work, it will not respect
-	# client_body_in_file_only. So we need to take an additional hop through an own server 
+	# client_body_in_file_only. So we need to take an additional hop through an own server
 	# on a separate port and using proxy settings in the original location.
 #	my $tmpfile = $r->request_body_file;
 	my $tmpfile = $r->header_in("X-FILE");
@@ -41,13 +41,13 @@ sub handler_deprecated {
 
 	# Validate Input parameters
 	if ( !isSafeString($tmpfile)) {
-		$r -> log_error(0, 
+		$r -> log_error(0,
 			sprintf("invalid characters in tmpfile \"%s\"\n", $tmpfile));
 		return HTTP_BAD_REQUEST;
 	}
 
 	if ( !isSafeString($destfile)) {
-		$r -> log_error(0, 
+		$r -> log_error(0,
 			sprintf("invalid characters in destfile \"%s\"\n", $destfile));
 		return HTTP_BAD_REQUEST;
 	}
@@ -55,7 +55,7 @@ sub handler_deprecated {
 	$r->header_out("Debug-Info", sprintf("BackEnd checking filename \"%s\", tmpfile \"%s\"", $destfile, $tmpfile));
 
 	my($dest_fnam, $dest_dir, $dest_ext) = fileparse($destfile);
-	
+
 	if ( ! -d $dest_dir ) {
 		my $rc = mkdir($dest_dir ,0755);
 		if ($rc != 0) {
@@ -68,7 +68,7 @@ sub handler_deprecated {
 
 	my $rc = rename($tmpfile, $destfile);
 	if($rc != 0)  {
-		$r->log_error(0, 
+		$r->log_error(0,
 			sprintf("Could not rename %s to %s", $tmpfile, $dest_dir));
 		$r->header_out("ExtendedError", "Could not rename file");
 		return HTTP_INTERNAL_SERVER_ERROR;
@@ -83,22 +83,22 @@ sub handler_deprecated {
 ##### isSafeString ###########################################################
 ##############################################################################
 sub isSafeString {
-  my $Unsafe_RFC3986 = qr/[^A-Za-z0-9\-\._~\/]/;
-  my ($text) = @_;
-  my $result;
-  return undef unless defined $text;
+	my $Unsafe_RFC3986 = qr/[^A-Za-z0-9\-\._~\/]/;
+	my ($text) = @_;
+	my $result;
+	return undef unless defined $text;
 
-  if ( $text =~ $Unsafe_RFC3986 ) {
-	  $result = OK;
-  }
-  else {
-	  $result = ERR;
-  }
+	if ( $text =~ $Unsafe_RFC3986 ) {
+		$result = OK;
+	}
+	else {
+		$result = ERR;
+	}
 
-  #debug
-  #printf STDERR "isSafeString(\"%s\")=%d\n", $text, $result;
+	#debug
+	#printf STDERR "isSafeString(\"%s\")=%d\n", $text, $result;
 
-  return $result
+	return $result
 }
 
 ##############################################################################
@@ -108,7 +108,7 @@ sub analysePkg {
 	my %pkgMeta;
 	my %EMPTY_HASH;
 	my $pkgfile = shift;
-	
+
 	print "<h1>Package Meta-Data</h1>\n";
 
 	# @TODO Consider using Perl Module ALPM instead of command line
@@ -175,11 +175,11 @@ sub verifyPkg {
 
 	# Detect Extension
 	# Pacman supported extension are define in man-page of makepkg.conf:
-	#	PKGEXT=".pkg.tar.gz", SRCEXT=".src.tar.gz" 
+	#	PKGEXT=".pkg.tar.gz", SRCEXT=".src.tar.gz"
 	#	Sets the compression used when making compiled or source
 	#	packages. Valid suffixes are .tar, .tar.gz, .tar.bz2, .tar.xz,
 	#	.tar.lzo, .tar.lrz, .tar.Z. and .tar.zst. Do not touch these unless you
-	#	 know what you are doing. 
+	#	 know what you are doing.
 	# Detection of compression formats is taken from stackoverflow
 	#	http://stackoverflow.com/questions/19120676/how-to-detect-type-of-compression-used-on-the-file-if-no-file-extension-is-spe)
 	#	Gzip (.gz) format description, starts with 0x1f, 0x8b, 0x08
@@ -189,7 +189,7 @@ sub verifyPkg {
 	#	compress (.Z) starts with 0x1f, 0x9
 
 	# @TODO implement checks (maybe only support .pkg.tar.xz)
-	
+
 	# actually we skip checks and pretend everyhing is ok.
 	return OK;
 
@@ -227,18 +227,18 @@ sub uploadPkg {
 
 	my $dest_fnam = "$pkgMeta{'Name'}-$pkgMeta{'Version'}-$pkgMeta{'Architecture'}";
 
-	# @TODO support uploading .zst on top to .xz files 
+	# @TODO support uploading .zst on top to .xz files
 	my $dest_ext = "pkg.tar.xz";
 
 
-	my $destfile = "$dest_dir/$dest_fnam.$dest_ext";	
+	my $destfile = "$dest_dir/$dest_fnam.$dest_ext";
 
 	#### now create directory and move file #####
 	if ( ! -d $dest_dir ) {
 		make_path( $dest_dir, {error => \my $err} );
 		if (@$err) {
 			print STDERR sprintf("Could not create target directory %s.\n", $dest_dir);
-	        	for my $diag (@$err) {
+				for my $diag (@$err) {
 				my ($file, $message) = %$diag;
 				print STDERR sprintf("\t Error from make_path: %s - %s\n", $file, $message);
 			}
@@ -274,7 +274,7 @@ sub uploadPkg {
 		print STDERR "Could not execute /usr/local/bin/repo-add. RC=$?\n";
 		print "Error recreating database\n";
 		return ERR;
-	} else { 
+	} else {
 		foreach my $line (split /[\r\n]+/, $output) {
 			print "$line<br>\n";
 		}
@@ -310,16 +310,16 @@ sub abortReq {
 	print STDERR "$logMsg\n";
 	print "Status: $status\n\n";
 	print "$userMsg\n";
-		
+
 	return;
-}	
+}
 
 #############################################################################
 ##### handleReq #############################################################
 ##############################################################################
 sub handleReq {
 	my $r = shift;
-	
+
 	my $response = "";
 
 	my $pkgfile = $ENV{"NGINX_REQUEST_BODY_FILE"};
@@ -384,7 +384,7 @@ sub handleReq {
 			uploadPkg $pkgfile, $docroot, $repo;
 			$rc=$?;
 		}
-		
+
 		if ($rc ne 0 ) {
 			abortReq(500,
 				"Internal Error in uploadPkg",
@@ -434,15 +434,15 @@ sub main_fcgi {
 ##############################################################################
 ##### Handlers ###############################################################
 ##############################################################################
-BEGIN { 
-  print STDERR "update.pl starting.\n";
-  };
+BEGIN {
+	print STDERR "update.pl starting.\n";
+	};
 
 END {
-  print STDERR "update.pl ending- RC=$?.\n";
-  }
+	print STDERR "update.pl ending- RC=$?.\n";
+	}
 
-# @TODO Insert Signal handler or something similar ro catch unwanted 
+# @TODO Insert Signal handler or something similar ro catch unwanted
 # aborts or exits.
 
 ##############################################################################

@@ -1,10 +1,10 @@
 location /archlinuxarm/ {
 	location ~ ^/archlinuxarm/(?<repo>core|extra|community|multilib|testing|community-testing|multilib-testing|gnome-unsstable|kde-unstable|alarm|aur)/os/(?<arch>[^/]+)/(?<pkg>[^/]+)$ {
-	    # Handle official Arch Linux repositories as caching only.
-	    # path for request: /$repo/os/$arch/<package>
+		# Handle official Arch Linux repositories as caching only.
+		# path for request: /$repo/os/$arch/<package>
 
-	    # Requests for package db and signature files should redirect upstream 
-	    # without caching
+		# Requests for package db and signature files should redirect upstream
+		# without caching
 		location ~ ^/archlinuxarm/.*\.(db|sig)$ {
 			autoindex on;
 
@@ -16,8 +16,8 @@ location /archlinuxarm/ {
 			return 404;
 		}
 
-		# Requests for actual packages should be served directly from cache if 
-		# available. If not available, retrieve and save the package from an 
+		# Requests for actual packages should be served directly from cache if
+		# available. If not available, retrieve and save the package from an
 		# upstream mirror.
 		location ~ ^/archlinuxarm/.*\.tar\.(xz|zst)$ {
 			root /srv/pacman-cache;
@@ -33,11 +33,11 @@ location /archlinuxarm/ {
 	location /archlinuxarm/ {
 		root /srv/pacman-repo;
 		autoindex on;
-  	}
-  
+	}
+
 } # location /archlinuxarm
 
-# for compatibility redirect uploads  
+# for compatibility redirect uploads
 location ~ ^/(?<repo>[^/]+)/os/(?<urlpath>armv6h.*)$ {
 	if ( $COMPAT = "0" ) { return 404; }
 	absolute_redirect off;
