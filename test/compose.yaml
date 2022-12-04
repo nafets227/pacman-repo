@@ -1,0 +1,32 @@
+# Test compose for ArchLinux pacman Repository container
+#
+# (C) 2017 Stefan Schallenberg
+#
+version: '2'
+
+services:
+  pacman-repo:
+    build: ..
+    volumes:
+        # Pacman Repositories (cache + nafets)
+        - ./repo:/srv/pacman-repo
+        - ./cache:/srv/pacman-cache
+    expose:
+        - "80"
+    environment:
+        - RESOLVER=${RESOLVER}
+        - NGINX_LOGLVL=${NGINX_LOGLVL}
+        - COMPAT=${COMPAT:-0}
+  test:
+    image: archlinux/archlinux:latest
+    volumes:
+        - ./test.sh:/pacman-repo/test.sh
+        - ./repo:/pacman-repo/repo
+        - ./cache:/pacman-repo/cache
+        - ./binutils-efi-2.27-1.90-x86_64.pkg.tar.xz:/pacman-repo/binutils-efi-2.27-1.90-x86_64.pkg.tar.xz
+    command: [ "bash", "-c", "pacman -Sy && pacman -S --noconfirm docker-compose perl-fcgi && /pacman-repo/test.sh --url http://pacman-repo:80" ]
+    depends_on:
+        pacman-repo:
+            condition: service_started
+    environment:
+        - COMPAT=${COMPAT:-0}

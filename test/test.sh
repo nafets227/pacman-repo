@@ -292,98 +292,8 @@ function testperlsyntax {
 }
 
 #-----------------------------------------------------------------------------
-#----- Local Setup using docker-compose --------------------------------------
-#-----------------------------------------------------------------------------
-
-##### LocalSetup: Start Containers ###########################################
-function localsetup_start {
-	if [ ! -z "$1T" ] ; then
-		export COMPAT="$1"
-	fi
-
-	export RESOLVER="$(sed -n -e 's/nameserver \(.*\)/\1/p' </etc/resolv.conf)"
-	if [ "$RESOLVER" == "127.0.0.53" ] ; then # localhost not available in container
-		export RESOLVER="192.168.108.1" # @TODO: dont use our default.
-	fi
-
-	export NGINX_LOGLVL=""
-	docker-compose \
-		-f $THISDIR/docker-compose.yaml \
-		-p pacman-repo \
-		up \
-		-d \
-		--force-recreate \
-		--build
-	if [ $? -ne 0 ] ; then return 1 ; fi
-		
-	sleep 2
-
-	return 0
-}
-
-##### LocalSetup: Stop Containers ############################################
-function localsetup_end {
-	docker-compose \
-		-f $THISDIR/docker-compose.yaml \
-		-p pacman-repo \
-		logs >$THISDIR/test-container.log
-	docker-compose \
-		-f $THISDIR/docker-compose.yaml \
-		-p pacman-repo \
-		down
-}
-
-##### LocalSetup: print log ##################################################
-function localsetup_log {
-	if [ -z "$1" ] ; then
-		docker logs pacmanrepo_pacman-repo_1
-	else 
-		docker logs --since=$1 pacmanrepo_pacman-repo_1
-	fi
-}
-
-#-----------------------------------------------------------------------------
 #----- Test Sets -------------------------------------------------------------
 #-----------------------------------------------------------------------------
-
-##############################################################################
-function testSetSmall {
-	URL="http://localhost:8084"
-
-	localsetup_start || return 1
-	printf "Debug: curl\n";
-	curl -Li $CURL_USER --data-binary @$THISDIR/$TESTPKGNAM $URL/test/upload/
-	printf "Debug: logs\n";
-	localsetup_log
-	printf "Debug: down\n";
-	localsetup_end
-}
-
-##############################################################################
-function testSetLocal {
-	# Startup
-	rm -rf $THISDIR/cache $THISDIR/repo >/dev/null
-
-	for COMPAT in 0 1 ; do
-		localsetup_start "$COMPAT" || return 1
-
-		testSetUrl \
-			"http://localhost:8084" \
-			"$COMPAT" \
-			"" \
-			"$THISDIR/cache" \
-			"$THISDIR/repo" \
-			"localsetup_log"
-		rc=$?
-
-		# Shutdown
-		localsetup_end
-
-		if [ $rc -ne 0 ] ; then break; fi
-	done
-
-	return $rc
-}
 
 ##############################################################################
 function testSetUrlCompatDisabled {
@@ -513,11 +423,6 @@ function testSetUrl {
 
 	# Reading Parameters
 	BASE_URL="$1"
-	BASE_COMPAT="$2"
-	BASE_CURL_USER="$3"
-	BASE_CONT_CACHE="$4"
-	BASE_CONT_REPO="$5"
-	BASE_CONT_LOG="$6"
 
 	for CLI_TYPE in compat-x86_64 compat-armv6h  x86_64 armv6h; do
 		CLIDIR=$THISDIR/client.$CLI_TYPE
@@ -550,7 +455,6 @@ function testSetUrl {
 		URL="$BASE_URL$suburl"
 		CONT_LOG="$BASE_CONT_LOG"
 		CURL_USER="$BASE_CURL_USER"
-		COMPAT="$BASE_COMPAT"
 
 		if  [ ! -z "$BASE_CONT_CACHE" ] ; then
 			CONT_CACHE=$BASE_CONT_CACHE$subpath
@@ -583,7 +487,7 @@ function testSetUrl {
 		if [ $rc -ne 0 ] ; then break; fi
 
 		#
-		# Now executre the real tests of one architecture
+		# Now execute the real tests of one architecture
 		#
 
 		pushd $THISDIR >/dev/null
@@ -615,20 +519,22 @@ export THISDIR=$(getDir)
 export TESTPKGNAM="binutils-efi-2.27-1.90-x86_64.pkg.tar.xz"
 export PACMAN_OPT="-dd --noconfirm"
 
-# check syntax to avoid actions that will fail anyhow.
-testperlsyntax || exit 1
-
 # Now execute tests
 if [ "$1" == "--perllocal" ] ; then
 	testperllocal
+	rc=$?
+elif [ "$1" == "--perlsyntax" ] ; then
+	testperlsyntax
 	rc=$?
 elif [ "$1" == "--url" ] ; then
 	shift
 	testSetUrl $@
 	rc=$?
 else
-	testSetLocal
-	rc=$?
+	printf "Error: No or invalid action %s - expected %s\n" \
+		"$1" \
+		"--url or --perllocal or --perlsyntax"
+	rc=1
 fi
 
 if [ $rc -eq 0 ] ; then
