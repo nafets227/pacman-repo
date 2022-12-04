@@ -51,7 +51,8 @@ location @arm_mirror {
 	root /srv/pacman-cache;
 	proxy_store on;
 	proxy_store_access user:rw group:rw all:r;
-	proxy_pass http://mirror.archlinuxarm.org/$arch/$repo/$pkg;
+	# proxy_pass http://mirror.archlinuxarm.org/$arch/$repo/$pkg;
+	proxy_pass http://alaa.ad24.cz/repos/2022/02/06/armv6h/$repo/$pkg;
 	proxy_redirect $uri /$arch/$repo/$pkg;
 
 	proxy_intercept_errors on;
@@ -60,7 +61,8 @@ location @arm_mirror {
 }
 
 location @arm_nocache {
-	proxy_pass http://mirror.archlinuxarm.org/$arch/$repo/$pkg;
+	# proxy_pass http://mirror.archlinuxarm.org/$arch/$repo/$pkg;
+	proxy_pass http://alaa.ad24.cz/repos/2022/02/06/armv6h/$repo/$pkg;
 	#    proxy_redirect      $uri /$arch/$repo/$pkg;
 
 	proxy_intercept_errors on;

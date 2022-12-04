@@ -78,7 +78,8 @@ function makePacmanConf {
 	if [ $arch == "x86_64" ] ; then
 		PKGURL="https://www.archlinux.org/packages/core/any/archlinux-keyring/download"
 	elif [ $arch == "armv6h" ] ; then
-		PKGURL="http://mirror.archlinuxarm.org/armv6h/core/archlinuxarm-keyring-20140119-1-any.pkg.tar.xz"
+		# PKGURL="http://mirror.archlinuxarm.org/armv6h/core/archlinuxarm-keyring-20140119-1-any.pkg.tar.xz"
+		PKGURL="http://alaa.ad24.cz/repos/2022/02/06/armv6h/core/archlinuxarm-keyring-20140119-1-any.pkg.tar.xz"
 	else
 		printf "ERROR: Unsupported architecture %s.\n" "$arch"
 		return 1
