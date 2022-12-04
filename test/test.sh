@@ -240,14 +240,14 @@ function testDownload {
 function testLoadPkg {
 	printf "*********** testLoadPkg start ($CLI_TYPE) **********\n"
 	STARTTIME=$(date +%s)
-	rm $CLIDIR/var/cache/pacman/pkg/pacman-*-$arch.pkg.tar.xz >/dev/null 2>&1
+	rm $CLIDIR/var/cache/pacman/pkg/pacman-*-$arch.pkg.tar.* >/dev/null 2>&1
 	pacman -Sw $PACMAN_OPT --config $CLIDIR/etc/pacman.conf pacman
 	if [ $? -ne 0 ]	; then
 		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf "Error - pacman could not load package pacman\n"
 		return 1
 	fi
-	if [ ! -f $CLIDIR/var/cache/pacman/pkg/pacman-*-$arch.pkg.tar.xz ] ; then
+	if [ ! -f $CLIDIR/var/cache/pacman/pkg/pacman-*-$arch.pkg.tar.[xz|zst] ] ; then
 		test -z "$CONT_LOG" || $CONT_LOG $STARTTIME
 		printf  "Error - pacman did not write %s \n" \
 			"$CLIDIR/var/cache/pacman/pkg/pacman-*-$arch.pkg.tar.xz"
