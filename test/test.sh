@@ -148,7 +148,7 @@ function makePacmanConf {
 ##### Test: Uploading a package ##############################################
 function testUpload {
 	STARTTIME=$(date +%s)
-	printf "*********** testUpload start ($CLI_TYPE $URL_UPLOAD) **********\n"
+	printf "*********** testUpload start ($CLI_TYPE $1) **********\n"
 	if [ -z "$1" ] ; then
 		printf "Error - no URL given as Parm. Aborting\n"
 		return 2
@@ -315,12 +315,12 @@ function testSetUrlCompatDisabled {
 	#
 
 	# Test Upload
-	http_code=$(curl -Lfi -w "%{http_code}" --data-binary @$TESTPKGNAM $URL/test/upload)
+	http_code=$(curl -Lfi -o /dev/null -w "%{http_code}" --data-binary @$TESTPKGNAM $URL/test/upload)
 	rc=$?
 	if	[ "$rc" -ne 22 ] ||
-		( [ $http_code != "404" ] && [ $http_code != "413" ] )
+		( [ "$http_code" != "404" ] && [ "$http_code" != "413" ] )
 	then
-		printf "Error - upload RC=%s (exp=22), HTTP %s (exp=404)\n" \
+		printf "Error - upload RC=%s (exp=22), HTTP %s (exp=404/413)\n" \
 			"$rc" "$http_code"
 		return 1
 	fi
