@@ -7,13 +7,14 @@
 
 # Environment variables recognized:
 test -z "$NGINX_LOGLVL" && NGINX_LOGLVL="warn"
-test -z "$RESOLVER" && RESOLVER="127.0.0.1"
 test -z "$COMPAT" && COMPAT="0"
 
 if [ "$COMPAT" != "1" ] && [ "$COMPAT" != "0" ] ; then
 	printf "Invalid value of COMPAT Environment variable: \"%s\"\n" "$COMPAT"
 	exit 1
 fi
+
+RESOLVER="$(sed -n -e 's/nameserver \(.*\)/\1/p' </etc/resolv.conf | head -1)"
 
 printf "starting pacman-repo container.\n"
 printf "\tNGINX_LOGLVL=%s\n" "$NGINX_LOGLVL"

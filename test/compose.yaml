@@ -14,7 +14,6 @@ services:
     expose:
         - "80"
     environment:
-        - RESOLVER=${RESOLVER}
         - NGINX_LOGLVL=${NGINX_LOGLVL}
         - COMPAT=${COMPAT:-0}
   test:
