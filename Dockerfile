@@ -1,4 +1,4 @@
-FROM archlinux/archlinux:base-20221204.0.107863
+FROM archlinux/archlinux:base-20221222.0.112999
 
 LABEL org.opencontainers.image.authors="Stefan Schallenberg aka nafets227 <infos@nafets.de>"
 LABEL Description="Pacman repository (private and caching) in a container"
