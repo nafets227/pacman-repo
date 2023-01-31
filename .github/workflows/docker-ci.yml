@@ -41,7 +41,7 @@ jobs:
           docker compose -f test/compose.yaml up --abort-on-container-exit
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
